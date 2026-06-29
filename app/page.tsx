@@ -1,65 +1,143 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+import { useState } from "react";
+
+import Navbar from "@/components/Navbar";
+import WhatsAppButton from "@/components/WhatsAppButton";
+import HomePage from "@/components/home/HomePage";
+import CoursesPage from "@/components/courses/CoursesPage";
+import CourseViewer from "@/components/course/CourseViewer";
+import StudentDashboard from "@/components/dashboard/StudentDashboard";
+import ContactPage from "@/components/contact/ContactPage";
+import AdminLayout from "@/components/admin/AdminLayout";
+import AdminDashboard from "@/components/admin/AdminDashboard";
+import AdminCourses from "@/components/admin/AdminCourses";
+import AdminModules from "@/components/admin/AdminModules";
+import AdminStudents from "@/components/admin/AdminStudents";
+import AdminPurchases from "@/components/admin/AdminPurchases";
+import AdminTasks from "@/components/admin/AdminTasks";
+import AdminAccess from "@/components/admin/AdminAccess";
+import AdminSettings from "@/components/admin/AdminSettings";
+
+type AppMode = "student" | "admin";
+
+type StudentView = "home" | "courses" | "course" | "dashboard" | "contact";
+type AdminView =
+  | "admin-dashboard"
+  | "admin-courses"
+  | "admin-modules"
+  | "admin-students"
+  | "admin-purchases"
+  | "admin-tasks"
+  | "admin-access"
+  | "admin-settings";
+
+type CurrentView = StudentView | AdminView;
+
+export default function App() {
+  const [mode, setMode] = useState<AppMode>("student");
+  const [currentView, setCurrentView] = useState<CurrentView>("home");
+  const [activeCourseId, setActiveCourseId] = useState<string>("");
+
+  const toggleMode = () => {
+    setMode((prev) => {
+      if (prev === "student") {
+        setCurrentView("admin-dashboard");
+        return "admin";
+      } else {
+        setCurrentView("home");
+        return "student";
+      }
+    });
+  };
+
+  const navigate = (view: CurrentView, courseId?: string) => {
+    if (view === "course" && courseId) {
+      setActiveCourseId(courseId);
+    }
+    setCurrentView(view);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const renderStudentContent = () => {
+    switch (currentView) {
+      case "home":
+        return (
+          <HomePage
+            onNavigate={(view, courseId) => navigate(view as CurrentView, courseId)}
+          />
+        );
+      case "courses":
+        return (
+          <CoursesPage
+            onOpenCourse={(id) => navigate("course", id)}
+          />
+        );
+      case "course":
+        return (
+          <CourseViewer
+            courseId={activeCourseId}
+            onBack={() => navigate("courses")}
+          />
+        );
+      case "dashboard":
+        return (
+          <StudentDashboard
+            onOpenCourse={(id) => navigate("course", id)}
+          />
+        );
+      case "contact":
+        return <ContactPage />;
+      default:
+        return null;
+    }
+  };
+
+  const renderAdminContent = () => {
+    switch (currentView) {
+      case "admin-dashboard": return <AdminDashboard />;
+      case "admin-courses": return <AdminCourses />;
+      case "admin-modules": return <AdminModules />;
+      case "admin-students": return <AdminStudents />;
+      case "admin-purchases": return <AdminPurchases />;
+      case "admin-tasks": return <AdminTasks />;
+      case "admin-access": return <AdminAccess />;
+      case "admin-settings": return <AdminSettings />;
+      default: return <AdminDashboard />;
+    }
+  };
+
+  if (mode === "admin") {
+    return (
+      <div className="flex flex-col h-screen overflow-hidden">
+        <Navbar
+          mode={mode}
+          currentView={currentView}
+          onNavigate={(view) => navigate(view)}
+          onToggleMode={toggleMode}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+        <AdminLayout
+          currentView={currentView as AdminView}
+          onNavigate={(view) => navigate(view)}
+        >
+          {renderAdminContent()}
+        </AdminLayout>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Navbar
+        mode={mode}
+        currentView={currentView}
+        onNavigate={(view) => navigate(view)}
+        onToggleMode={toggleMode}
+      />
+      <main className="flex-1">
+        {renderStudentContent()}
       </main>
+      <WhatsAppButton />
     </div>
   );
 }
