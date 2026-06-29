@@ -31,6 +31,7 @@ export interface Course {
   studentsCount: number;
   status: "published" | "draft" | "hidden";
   lastLessonId?: string;
+  imageUrl?: string;
 }
 
 export interface Student {
@@ -84,8 +85,9 @@ export const courses: Course[] = [
     id: "curso-0-3",
     title: "Descubriendo su cuerpo",
     ageRange: "0–3 meses",
+    imageUrl: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=640&q=80",
     shortDescription:
-      "Acompañá el desarrollo sensorial y corporal de tu bebé en sus primeros meses de vida con guías claras y ejercicios profesionales.",
+      "Acompaña el desarrollo sensorial y corporal de tu bebé en sus primeros meses de vida con guías claras y ejercicios profesionales.",
     longDescription:
       "Este curso está diseñado para padres y cuidadores que quieren acompañar activamente el desarrollo de su bebé en la etapa más crítica. Aprenderás técnicas de estimulación sensorial, posturas seguras y actividades que favorecen la organización corporal desde los primeros días.",
     price: 5500,
@@ -105,7 +107,7 @@ export const courses: Course[] = [
             type: "video",
             duration: 5,
             completed: true,
-            description: "Conocé la metodología del curso y cómo vas a trabajar con tu bebé.",
+            description: "Conoce la metodología del curso y cómo vas a trabajar con tu bebé.",
             hasMaterial: false,
             hasTask: false,
             visible: true,
@@ -116,7 +118,7 @@ export const courses: Course[] = [
             type: "video",
             duration: 8,
             completed: true,
-            description: "Entendé qué habilidades vas a estimular en esta etapa.",
+            description: "Entiende qué habilidades vas a estimular en esta etapa.",
             hasMaterial: true,
             hasTask: false,
             visible: true,
@@ -160,7 +162,7 @@ export const courses: Course[] = [
             hasMaterial: true,
             hasTask: true,
             taskDescription:
-              "Practicá las técnicas de regulación por 3 días y contanos cómo respondió tu bebé. Adjuntá una foto o video corto (máx. 1 min).",
+              "Practica las técnicas de regulación por 3 días y cuéntanos cómo respondió tu bebé. Adjunta una foto o video corto (máx. 1 min).",
             visible: true,
           },
           {
@@ -184,7 +186,7 @@ export const courses: Course[] = [
             description: "Ejercicios suaves para activar la musculatura abdominal del bebé.",
             hasMaterial: false,
             hasTask: true,
-            taskDescription: "Realizá la rutina de activación abdominal y documentá tu experiencia.",
+            taskDescription: "Realiza la rutina de activación abdominal y documenta tu experiencia.",
             visible: true,
           },
           {
@@ -222,7 +224,7 @@ export const courses: Course[] = [
             type: "text",
             duration: 6,
             completed: false,
-            description: "Respuestas a las preguntas más comunes de los papás que cursaron.",
+            description: "Respuestas a las preguntas más comunes de los papás y mamás que cursaron.",
             hasMaterial: false,
             hasTask: false,
             visible: true,
@@ -233,7 +235,7 @@ export const courses: Course[] = [
             type: "text",
             duration: 5,
             completed: false,
-            description: "Información sobre cómo contactarte con el equipo de ALIVOS si necesitás apoyo.",
+            description: "Información sobre cómo contactar al equipo de ALIVOS si necesitas apoyo.",
             hasMaterial: false,
             hasTask: false,
             visible: true,
@@ -257,8 +259,9 @@ export const courses: Course[] = [
     id: "curso-3-6",
     title: "Descubriendo el movimiento",
     ageRange: "3–6 meses",
+    imageUrl: "https://images.unsplash.com/photo-1566004100631-35d015d6a491?auto=format&fit=crop&w=640&q=80",
     shortDescription:
-      "Estimulá las habilidades motoras de tu bebé en la etapa en que comienza a descubrir el movimiento voluntario.",
+      "Estimula las habilidades motoras de tu bebé en la etapa en que comienza a descubrir el movimiento voluntario.",
     longDescription:
       "A los 3-6 meses tu bebé empieza a moverse con más intención. Este curso te enseña cómo estimular esos movimientos tempranos, favorecer el rolado y preparar su cuerpo para las siguientes etapas del desarrollo.",
     price: 5500,
@@ -309,7 +312,7 @@ export const courses: Course[] = [
             description: "Técnicas para estimular el rolado de manera segura y progresiva.",
             hasMaterial: true,
             hasTask: true,
-            taskDescription: "Practica las técnicas de rolado y documenta el progreso con fotos.",
+            taskDescription: "Practica las técnicas de rolado y documenta el progreso con fotos o un video corto.",
             visible: true,
           },
           {
@@ -342,8 +345,9 @@ export const courses: Course[] = [
     id: "curso-6-9",
     title: "Preparándose para gatear",
     ageRange: "6–9 meses",
+    imageUrl: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&w=640&q=80",
     shortDescription:
-      "Guiá a tu bebé en la etapa de preparación para el gateo, una de las más importantes para el desarrollo neurológico.",
+      "Guía a tu bebé en la etapa de preparación para el gateo, una de las más importantes para el desarrollo neurológico.",
     longDescription:
       "El gateo es una etapa fundamental que muchos bebés saltan. Este curso explica por qué es importante y cómo estimular todos los patrones de movimiento que preparan a tu bebé para gatear correctamente.",
     price: 5500,
@@ -393,7 +397,7 @@ export const courses: Course[] = [
             description: "Ejercicios para trabajar el traslado de peso lateral y anterior.",
             hasMaterial: false,
             hasTask: true,
-            taskDescription: "Practica el traslado de peso y observa la respuesta de tu bebé.",
+            taskDescription: "Practica el traslado de peso y observa la respuesta de tu bebé. Cuéntanos tus observaciones.",
             visible: true,
           },
         ],
@@ -404,8 +408,9 @@ export const courses: Course[] = [
     id: "curso-caminar",
     title: "Aprendiendo a caminar",
     ageRange: "9–15 meses",
+    imageUrl: "https://images.unsplash.com/photo-1471286174890-9c112ac6823?auto=format&fit=crop&w=640&q=80",
     shortDescription:
-      "Acompañá a tu bebé en los primeros pasos, entendiendo cada etapa del proceso y cómo estimularla de manera segura.",
+      "Acompaña a tu bebé en los primeros pasos, entendiendo cada etapa del proceso y cómo estimularla de manera segura.",
     longDescription:
       "Caminar es el logro más esperado. Este curso te guía por todas las etapas previas al primer paso independiente y te enseña a acompañar el proceso sin apresurarlo, respetando los tiempos de tu bebé.",
     price: 5500,
@@ -455,7 +460,7 @@ export const courses: Course[] = [
             description: "Cómo guiar los primeros pasos de manera segura.",
             hasMaterial: true,
             hasTask: true,
-            taskDescription: "Documentá los avances de tu bebé con un video corto.",
+            taskDescription: "Documenta los avances de tu bebé con un video corto.",
             visible: true,
           },
         ],

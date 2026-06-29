@@ -123,7 +123,7 @@ export default function AdminTasks() {
                   value={adminComment}
                   onChange={(e) => setAdminComment(e.target.value)}
                   className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300 resize-none"
-                  placeholder="Escribí tu feedback para el alumno..."
+                  placeholder="Escribe tu feedback para el alumno..."
                   defaultValue={selectedTask.adminComment}
                 />
               </div>

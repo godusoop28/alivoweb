@@ -104,7 +104,7 @@ export default function AdminLayout({ currentView, onNavigate, children }: Admin
   const [logoError, setLogoError] = useState(false);
 
   return (
-    <div className="flex h-[calc(100vh-40px)] bg-alivos-bg overflow-hidden">
+    <div className="flex flex-1 bg-alivos-bg overflow-hidden min-h-0">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div

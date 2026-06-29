@@ -30,11 +30,11 @@ const defaultLessonForm: LessonForm = {
 };
 
 const typeOptions: { value: LessonType; label: string }[] = [
-  { value: "video", label: "📹 Video" },
-  { value: "text", label: "📄 Texto" },
-  { value: "pdf", label: "📎 PDF" },
-  { value: "task", label: "✏️ Tarea" },
-  { value: "evaluation", label: "🏆 Evaluación" },
+  { value: "video", label: "Video" },
+  { value: "text", label: "Texto" },
+  { value: "pdf", label: "PDF" },
+  { value: "task", label: "Tarea" },
+  { value: "evaluation", label: "Evaluación" },
 ];
 
 export default function AdminModules() {
@@ -300,11 +300,16 @@ export default function AdminModules() {
                     <div key={lesson.id} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50 transition-colors">
                       <div className="text-xs text-slate-400 w-5 text-center">{lessonIndex + 1}</div>
                       <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <span className="text-slate-400">
-                          {lesson.type === "video" ? "📹" :
-                           lesson.type === "pdf" ? "📎" :
-                           lesson.type === "task" ? "✏️" :
-                           lesson.type === "evaluation" ? "🏆" : "📄"}
+                        <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${
+                          lesson.type === "video" ? "bg-blue-100 text-blue-700" :
+                          lesson.type === "pdf" ? "bg-red-100 text-red-700" :
+                          lesson.type === "task" ? "bg-orange-100 text-orange-700" :
+                          lesson.type === "evaluation" ? "bg-purple-100 text-purple-700" : "bg-slate-100 text-slate-600"
+                        }`}>
+                          {lesson.type === "video" ? "VID" :
+                           lesson.type === "pdf" ? "PDF" :
+                           lesson.type === "task" ? "TAR" :
+                           lesson.type === "evaluation" ? "EVAL" : "TXT"}
                         </span>
                         <span className="text-sm font-medium text-alivos-dark truncate">{lesson.title}</span>
                         {lesson.hasTask && (

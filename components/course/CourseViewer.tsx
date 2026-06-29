@@ -94,7 +94,7 @@ export default function CourseViewer({ courseId, onBack }: CourseViewerProps) {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-104px)] bg-white animate-fade-in">
+    <div className="flex flex-col h-[calc(100vh-96px)] bg-white animate-fade-in">
       {/* Top bar */}
       <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-slate-100 bg-white shrink-0">
         <div className="flex items-center gap-3 min-w-0">
@@ -245,8 +245,8 @@ export default function CourseViewer({ courseId, onBack }: CourseViewerProps) {
                     <p className="text-sm text-slate-300">
                       Video: {currentLesson.title}
                     </p>
-                    <p className="text-xs text-slate-500 mt-1">
-                      {currentLesson.duration} minutos · Vimeo (conectar en producción)
+                    <p className="text-xs text-slate-400 mt-1">
+                      {currentLesson.duration} min · Video Vimeo (integración disponible en producción)
                     </p>
                   </div>
                   <div className="absolute bottom-3 right-3 bg-black/50 text-white text-xs px-2 py-1 rounded">
@@ -372,7 +372,7 @@ export default function CourseViewer({ courseId, onBack }: CourseViewerProps) {
                   <textarea
                     className="w-full border border-slate-200 rounded-xl p-3 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-300 resize-none"
                     rows={4}
-                    placeholder="Escribí tu respuesta acá..."
+                    placeholder="Escribe tu respuesta aquí..."
                     value={taskAnswer}
                     onChange={(e) => setTaskAnswer(e.target.value)}
                   />
@@ -422,7 +422,7 @@ export default function CourseViewer({ courseId, onBack }: CourseViewerProps) {
             </div>
           ) : (
             <div className="flex items-center justify-center h-64 text-slate-400">
-              Seleccioná una lección del panel izquierdo
+              Selecciona una lección del panel izquierdo
             </div>
           )}
         </main>

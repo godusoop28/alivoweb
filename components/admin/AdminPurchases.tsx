@@ -31,7 +31,7 @@ export default function AdminPurchases() {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: "Total cobrado", value: `$${totalPaid.toLocaleString("es-AR")}`, color: "text-green-600 bg-green-50" },
+          { label: "Total cobrado", value: `$${totalPaid.toLocaleString("es-MX")}`, color: "text-green-600 bg-green-50" },
           { label: "Pagos confirmados", value: purchases.filter((p) => p.status === "paid").length, color: "text-green-600 bg-green-50" },
           { label: "Pendientes", value: purchases.filter((p) => p.status === "pending").length, color: "text-yellow-600 bg-yellow-50" },
           { label: "Fallidos", value: purchases.filter((p) => p.status === "failed").length, color: "text-red-600 bg-red-50" },
@@ -82,7 +82,7 @@ export default function AdminPurchases() {
                   </td>
                   <td className="px-5 py-4 text-slate-500 text-xs hidden md:table-cell">{purchase.date}</td>
                   <td className="px-5 py-4 font-bold text-alivos-dark">
-                    ${purchase.amount.toLocaleString("es-AR")}
+                    ${purchase.amount.toLocaleString("es-MX")}
                   </td>
                   <td className="px-5 py-4">
                     <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
