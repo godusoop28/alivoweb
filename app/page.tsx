@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+import { useAuth } from "@/lib/auth/AuthContext";
 import Navbar from "@/components/Navbar";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import HomePage from "@/components/home/HomePage";
@@ -35,9 +36,40 @@ type AdminView =
 type CurrentView = StudentView | AdminView;
 
 export default function App() {
+  const { user, loading } = useAuth();
   const [mode, setMode] = useState<AppMode>("student");
   const [currentView, setCurrentView] = useState<CurrentView>("home");
   const [activeCourseId, setActiveCourseId] = useState<string>("");
+
+  // Sync the visible panel with the logged-in user's role. Admins land on
+  // the admin dashboard, students on their course dashboard; logging out
+  // always drops back to the public landing page.
+  useEffect(() => {
+    if (loading) return;
+    if (user?.role === "ADMIN") {
+      setMode("admin");
+      setCurrentView("admin-dashboard");
+    } else if (user?.role === "STUDENT") {
+      setMode("student");
+      setCurrentView("dashboard");
+    } else {
+      setMode("student");
+      setCurrentView("home");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, loading]);
+
+  // Admin and student-only views require a session; without one, bounce to
+  // the public landing page instead of rendering an empty/broken panel.
+  useEffect(() => {
+    if (loading) return;
+    const isAdminView = currentView.startsWith("admin-");
+    const requiresAuth = isAdminView || currentView === "dashboard";
+    if (requiresAuth && !user) {
+      setMode("student");
+      setCurrentView("home");
+    }
+  }, [currentView, user, loading]);
 
   const toggleMode = () => {
     setMode((prev) => {

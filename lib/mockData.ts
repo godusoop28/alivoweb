@@ -1,3 +1,5 @@
+import { alivosAssets, DESCUBRIENDO_SU_CUERPO_SLUG } from "@/lib/assets/alivosAssets";
+
 export interface Lesson {
   id: string;
   title: string;
@@ -10,12 +12,20 @@ export interface Lesson {
   hasTask: boolean;
   taskDescription?: string;
   visible: boolean;
+  /** Illustrative image for the lesson (objectives, materials, FAQ, etc). */
+  imageUrl?: string;
+  /** Downloadable PDF (activities, evaluation, resources). */
+  pdfUrl?: string;
+  /** Free-form tag describing which kind of real asset this lesson uses. */
+  assetType?: string;
 }
 
 export interface Module {
   id: string;
   title: string;
   lessons: Lesson[];
+  coverImage?: string;
+  bannerImage?: string;
 }
 
 export interface Course {
@@ -32,6 +42,7 @@ export interface Course {
   status: "published" | "draft" | "hidden";
   lastLessonId?: string;
   imageUrl?: string;
+  bannerImage?: string;
 }
 
 export interface Student {
@@ -80,12 +91,170 @@ export interface ManualAccess {
   status: "active" | "revoked";
 }
 
+const course1ModuleThemes: { title: string; description: string; taskDescription: string }[] = [
+  {
+    title: "Módulo 1: Regulación y contacto corporal",
+    description: "Primeras semanas: organización del sistema nervioso y contacto piel a piel.",
+    taskDescription:
+      "Practica las técnicas de regulación por 3 días y cuéntanos cómo respondió tu bebé. Adjunta una foto o video corto (máx. 1 min).",
+  },
+  {
+    title: "Módulo 2: Control postural y equilibrio",
+    description: "Sentamos las bases del control de tronco que tu bebé irá dominando en los próximos meses.",
+    taskDescription: "Realiza los ejercicios de base postural y documenta tu experiencia con fotos o video.",
+  },
+  {
+    title: "Módulo 3: Preparando el desplazamiento",
+    description: "Estimulación temprana de los patrones que, más adelante, facilitarán el gateo.",
+    taskDescription: "Practica las activaciones de esta fase y cuéntanos cómo respondió tu bebé.",
+  },
+  {
+    title: "Módulo 4: Cierre, integración y siguientes pasos",
+    description: "Repaso general del curso y una mirada hacia las próximas etapas del desarrollo motor.",
+    taskDescription: "Completa la actividad de cierre y comparte tus observaciones finales.",
+  },
+];
+
+function buildCourse1Modules(): Module[] {
+  const moduleKeys = ["module01", "module02", "module03", "module04"] as const;
+  return course1ModuleThemes.map((theme, i) => {
+    const n = i + 1;
+    const assets = alivosAssets.courseDescubriendoSuCuerpo.modules[moduleKeys[i]];
+    const completed = n <= 2; // Módulos 1 y 2 completos ≈ 45% de avance (ver progress más abajo)
+    const lessons: Lesson[] = [
+      {
+        id: `l-m${n}-portada`,
+        title: "Portada del módulo",
+        type: "video",
+        duration: 5,
+        completed,
+        description: `Presentación visual del ${theme.title.toLowerCase()}.`,
+        hasMaterial: false,
+        hasTask: false,
+        visible: true,
+        imageUrl: assets.cover,
+        assetType: "cover",
+        ...(n === 1 ? { vimeoUrl: "https://vimeo.com/76979871" } : {}),
+      },
+      {
+        id: `l-m${n}-objetivos`,
+        title: "Objetivos del módulo",
+        type: "text",
+        duration: 6,
+        completed,
+        description: theme.description,
+        hasMaterial: false,
+        hasTask: false,
+        visible: true,
+        imageUrl: assets.objectives,
+        assetType: "objectives",
+      },
+      {
+        id: `l-m${n}-materiales`,
+        title: "Materiales necesarios",
+        type: "text",
+        duration: 3,
+        completed,
+        description: "Estos son los materiales que vas a necesitar para las actividades de este módulo.",
+        hasMaterial: false,
+        hasTask: false,
+        visible: true,
+        imageUrl: assets.materials,
+        assetType: "materials",
+      },
+      {
+        id: `l-m${n}-extra`,
+        title: "Contenido extra",
+        type: "text",
+        duration: 8,
+        completed,
+        description: "Material complementario con referencias y recursos adicionales para profundizar.",
+        hasMaterial: false,
+        hasTask: false,
+        visible: true,
+        imageUrl: assets.extra,
+        assetType: "extra",
+      },
+      {
+        id: `l-m${n}-faq`,
+        title: "Preguntas frecuentes",
+        type: "text",
+        duration: 6,
+        completed,
+        description: "Respuestas a las preguntas más comunes de las familias que cursaron este módulo.",
+        hasMaterial: false,
+        hasTask: false,
+        visible: true,
+        imageUrl: assets.faq,
+        assetType: "faq",
+      },
+      {
+        id: `l-m${n}-actividades`,
+        title: "Actividades del módulo",
+        type: "task",
+        duration: 20,
+        completed,
+        description: "Pon en práctica lo aprendido con la guía de actividades de este módulo.",
+        hasMaterial: true,
+        hasTask: true,
+        taskDescription: theme.taskDescription,
+        visible: true,
+        imageUrl: assets.materials,
+        pdfUrl: assets.activitiesPdf,
+        assetType: "activities",
+      },
+      {
+        id: `l-m${n}-evaluacion`,
+        title: "Evaluación del módulo",
+        type: "evaluation",
+        duration: 15,
+        completed: false,
+        description: "Cuestionario para evaluar los conocimientos adquiridos en este módulo.",
+        hasMaterial: true,
+        hasTask: false,
+        visible: true,
+        imageUrl:
+          n % 2 === 1
+            ? alivosAssets.courseDescubriendoSuCuerpo.evaluation.imageOne
+            : alivosAssets.courseDescubriendoSuCuerpo.evaluation.imageTwo,
+        pdfUrl: assets.evaluationPdf,
+        assetType: "evaluation",
+      },
+    ];
+
+    if (n === 4) {
+      lessons.push({
+        id: "l-diario-ejercicios",
+        title: "Diario de ejercicios (recurso descargable)",
+        type: "pdf",
+        duration: 5,
+        completed: false,
+        description: "Plantilla para llevar el registro de las actividades realizadas durante todo el curso.",
+        hasMaterial: true,
+        hasTask: false,
+        visible: true,
+        pdfUrl: alivosAssets.courseDescubriendoSuCuerpo.resources.exerciseDiaryPdf,
+        assetType: "resource",
+      });
+    }
+
+    return {
+      id: `mod-0${n}`,
+      title: theme.title,
+      coverImage: assets.cover,
+      bannerImage: assets.banner,
+      lessons,
+    };
+  });
+}
+
 export const courses: Course[] = [
   {
-    id: "curso-0-3",
+    id: DESCUBRIENDO_SU_CUERPO_SLUG,
     title: "Descubriendo su cuerpo",
     ageRange: "0–3 meses",
-    imageUrl: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=640&q=80",
+    imageUrl: alivosAssets.courseDescubriendoSuCuerpo.cover,
+    bannerImage: alivosAssets.courseDescubriendoSuCuerpo.banner,
     shortDescription:
       "Acompaña el desarrollo sensorial y corporal de tu bebé en sus primeros meses de vida con guías claras y ejercicios profesionales.",
     longDescription:
@@ -95,171 +264,14 @@ export const courses: Course[] = [
     progress: 45,
     studentsCount: 87,
     status: "published",
-    lastLessonId: "l-fase1",
-    modules: [
-      {
-        id: "mod-intro",
-        title: "Introducción",
-        lessons: [
-          {
-            id: "l-bienvenida",
-            title: "Bienvenida",
-            type: "video",
-            duration: 5,
-            completed: true,
-            description: "Conoce la metodología del curso y cómo vas a trabajar con tu bebé.",
-            hasMaterial: false,
-            hasTask: false,
-            visible: true,
-          },
-          {
-            id: "l-objetivo",
-            title: "Objetivo del módulo",
-            type: "video",
-            duration: 8,
-            completed: true,
-            description: "Entiende qué habilidades vas a estimular en esta etapa.",
-            hasMaterial: true,
-            hasTask: false,
-            visible: true,
-          },
-          {
-            id: "l-tips",
-            title: "Tips antes de empezar",
-            type: "text",
-            duration: 4,
-            completed: true,
-            description: "Consejos prácticos para preparar el ambiente y tu estado de ánimo.",
-            hasMaterial: false,
-            hasTask: false,
-            visible: true,
-          },
-          {
-            id: "l-materiales",
-            title: "Materiales necesarios",
-            type: "pdf",
-            duration: 3,
-            completed: false,
-            description: "Lista completa de materiales que vas a necesitar durante el curso.",
-            hasMaterial: true,
-            hasTask: false,
-            visible: true,
-          },
-        ],
-      },
-      {
-        id: "mod-fases",
-        title: "Fases de estimulación",
-        lessons: [
-          {
-            id: "l-fase1",
-            title: "Fase 1: Regulación y organización corporal",
-            type: "video",
-            duration: 18,
-            completed: false,
-            description:
-              "Técnicas para ayudar a tu bebé a regular su sistema nervioso y encontrar su organización corporal natural.",
-            hasMaterial: true,
-            hasTask: true,
-            taskDescription:
-              "Practica las técnicas de regulación por 3 días y cuéntanos cómo respondió tu bebé. Adjunta una foto o video corto (máx. 1 min).",
-            visible: true,
-          },
-          {
-            id: "l-fase2",
-            title: "Fase 2: Posturas fundamentales",
-            type: "video",
-            duration: 22,
-            completed: false,
-            description:
-              "Aprenderás las posturas más importantes para el desarrollo motor temprano y cómo realizarlas con seguridad.",
-            hasMaterial: true,
-            hasTask: false,
-            visible: true,
-          },
-          {
-            id: "l-fase3",
-            title: "Fase 3: Activación abdominal",
-            type: "video",
-            duration: 15,
-            completed: false,
-            description: "Ejercicios suaves para activar la musculatura abdominal del bebé.",
-            hasMaterial: false,
-            hasTask: true,
-            taskDescription: "Realiza la rutina de activación abdominal y documenta tu experiencia.",
-            visible: true,
-          },
-          {
-            id: "l-fase4",
-            title: "Fase 4: Estimulación vestibular",
-            type: "video",
-            duration: 20,
-            completed: false,
-            description:
-              "Actividades que estimulan el sistema vestibular para mejorar el equilibrio y la percepción espacial.",
-            hasMaterial: true,
-            hasTask: false,
-            visible: true,
-          },
-        ],
-      },
-      {
-        id: "mod-extra",
-        title: "Recursos y cierre",
-        lessons: [
-          {
-            id: "l-extra",
-            title: "Contenido extra",
-            type: "pdf",
-            duration: 10,
-            completed: false,
-            description: "Material complementario con referencias científicas y recursos adicionales.",
-            hasMaterial: true,
-            hasTask: false,
-            visible: true,
-          },
-          {
-            id: "l-faq",
-            title: "Preguntas frecuentes",
-            type: "text",
-            duration: 6,
-            completed: false,
-            description: "Respuestas a las preguntas más comunes de los papás y mamás que cursaron.",
-            hasMaterial: false,
-            hasTask: false,
-            visible: true,
-          },
-          {
-            id: "l-acompaniamiento",
-            title: "Acompañamiento",
-            type: "text",
-            duration: 5,
-            completed: false,
-            description: "Información sobre cómo contactar al equipo de ALIVOS si necesitas apoyo.",
-            hasMaterial: false,
-            hasTask: false,
-            visible: true,
-          },
-          {
-            id: "l-evaluacion",
-            title: "Evaluación final",
-            type: "evaluation",
-            duration: 15,
-            completed: false,
-            description: "Cuestionario final para evaluar los conocimientos adquiridos.",
-            hasMaterial: false,
-            hasTask: false,
-            visible: true,
-          },
-        ],
-      },
-    ],
+    lastLessonId: "l-m2-actividades",
+    modules: buildCourse1Modules(),
   },
   {
     id: "curso-3-6",
     title: "Descubriendo el movimiento",
     ageRange: "3–6 meses",
-    imageUrl: "https://images.unsplash.com/photo-1566004100631-35d015d6a491?auto=format&fit=crop&w=640&q=80",
+    imageUrl: alivosAssets.home.coverOne,
     shortDescription:
       "Estimula las habilidades motoras de tu bebé en la etapa en que comienza a descubrir el movimiento voluntario.",
     longDescription:
@@ -345,7 +357,7 @@ export const courses: Course[] = [
     id: "curso-6-9",
     title: "Preparándose para gatear",
     ageRange: "6–9 meses",
-    imageUrl: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&w=640&q=80",
+    imageUrl: alivosAssets.home.coverTwo,
     shortDescription:
       "Guía a tu bebé en la etapa de preparación para el gateo, una de las más importantes para el desarrollo neurológico.",
     longDescription:
@@ -408,7 +420,7 @@ export const courses: Course[] = [
     id: "curso-caminar",
     title: "Aprendiendo a caminar",
     ageRange: "9–15 meses",
-    imageUrl: "https://images.unsplash.com/photo-1471286174890-9c112ac6823?auto=format&fit=crop&w=640&q=80",
+    imageUrl: alivosAssets.home.babiesBanner,
     shortDescription:
       "Acompaña a tu bebé en los primeros pasos, entendiendo cada etapa del proceso y cómo estimularla de manera segura.",
     longDescription:
@@ -475,7 +487,7 @@ export const students: Student[] = [
     name: "María González",
     email: "maria.gonzalez@email.com",
     phone: "+54 9 11 1234-5678",
-    courses: ["curso-0-3", "curso-3-6"],
+    courses: [DESCUBRIENDO_SU_CUERPO_SLUG, "curso-3-6"],
     avgProgress: 45,
     lastAccess: "2026-06-28",
     status: "active",
@@ -485,7 +497,7 @@ export const students: Student[] = [
     name: "Laura Fernández",
     email: "laura.fernandez@email.com",
     phone: "+54 9 11 2345-6789",
-    courses: ["curso-0-3"],
+    courses: [DESCUBRIENDO_SU_CUERPO_SLUG],
     avgProgress: 80,
     lastAccess: "2026-06-27",
     status: "active",
@@ -505,7 +517,7 @@ export const students: Student[] = [
     name: "Carolina López",
     email: "carolina.lopez@email.com",
     phone: "+54 9 11 4567-8901",
-    courses: ["curso-0-3"],
+    courses: [DESCUBRIENDO_SU_CUERPO_SLUG],
     avgProgress: 60,
     lastAccess: "2026-06-20",
     status: "blocked",
@@ -589,7 +601,7 @@ export const taskSubmissions: TaskSubmission[] = [
     deliveredAt: "2026-06-27",
     status: "delivered",
     taskInstructions:
-      "Practicá las técnicas de regulación por 3 días y contanos cómo respondió tu bebé. Adjuntá una foto o video corto.",
+      "Practica las técnicas de regulación por 3 días y cuéntanos cómo respondió tu bebé. Adjunta una foto o video corto.",
     studentAnswer:
       "Practiqué las técnicas durante 3 días. El primer día Tomás estaba muy inquieto pero al tercer día ya se calmaba más rápido. Le gustó mucho la técnica de presión en el abdomen.",
     adminComment: "",
@@ -602,10 +614,10 @@ export const taskSubmissions: TaskSubmission[] = [
     deliveredAt: "2026-06-25",
     status: "needs_correction",
     taskInstructions:
-      "Realizá la rutina de activación abdominal y documentá tu experiencia con fotos o video.",
+      "Realiza la rutina de activación abdominal y documenta tu experiencia con fotos o video.",
     studentAnswer: "Hice los ejercicios pero no entendí bien la posición de la segunda técnica.",
     adminComment:
-      "¡Gracias por tu entrega! Para la segunda técnica recordá que el bebé debe estar en decúbito dorsal con las piernas flexionadas. Revisá el video de la Fase 3 de nuevo y volvé a enviarnos.",
+      "¡Gracias por tu entrega! Para la segunda técnica recuerda que el bebé debe estar en decúbito dorsal con las piernas flexionadas. Revisa el video de la Fase 3 de nuevo y vuelve a enviárnoslo.",
   },
   {
     id: "task-003",

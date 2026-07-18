@@ -1,37 +1,60 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ALIVOS Web
 
-## Getting Started
+Frontend de la plataforma de cursos de ALIVOS Medicina de Rehabilitación, construido con Next.js (App Router) y Tailwind CSS. Consume la API de `alivosApi` para cursos, autenticación, dashboard de alumno y panel de administración.
 
-First, run the development server:
+## Variable de entorno
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Copia `.env.local.example` a `.env.local`:
+
+```
+NEXT_PUBLIC_API_URL=http://localhost:4000/api
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+En producción (Vercel), esta variable debe apuntar a la API desplegada en Render, por ejemplo:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+NEXT_PUBLIC_API_URL=https://alivos-api.onrender.com/api
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Correr en local
 
-## Learn More
+```bash
+npm install
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Abre `http://localhost:3000`. Asegúrate de que `alivosApi` esté corriendo en `http://localhost:4000` (ver README de `alivosApi`), o el sitio caerá en los datos de referencia de `lib/mockData.ts` para no romperse.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Cómo está conectado a la API
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `lib/api/client.ts`: cliente `fetch` con manejo de `Authorization: Bearer <token>` y errores tipados (`ApiError`).
+- `lib/api/auth.ts`, `courses.ts`, `admin.ts`, `settings.ts`: funciones tipadas por dominio.
+- `lib/auth/AuthContext.tsx`: sesión global (token en `localStorage`, usuario actual, `login`/`logout`).
+- Cada página/componente hace su propio `fetch` en un `useEffect`, con estado de carga y, si la API no responde, cae en `lib/api/mockFallback.ts` (adaptador de `lib/mockData.ts`) para que la demo nunca se vea rota.
 
-## Deploy on Vercel
+## Usuarios demo
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Rol   | Correo             | Contraseña     |
+|-------|---------------------|----------------|
+| Admin | admin@alivos.com    | Admin12345!    |
+| Alumno| cliente@alivos.com  | Cliente12345!  |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-"# alivoweb" 
+En la barra de navegación, botón **Ingresar** abre un modal de login con estos dos accesos rápidos (llaman al endpoint real `POST /api/auth/login`, no están hardcodeados en el frontend).
+
+## Estructura relevante
+
+- `app/page.tsx`: shell de la aplicación (modo alumno/admin, navegación por vistas).
+- `components/home`, `components/courses`, `components/course`, `components/dashboard`, `components/contact`: vistas públicas/alumno.
+- `components/admin/*`: panel de administración (cursos, módulos/lecciones, alumnos, compras, tareas, accesos manuales, configuración).
+- `public/logos/*`: logotipos de la marca.
+
+## Deploy en Vercel
+
+1. Importa el repo en Vercel, con **Root Directory** = `alivoweb`.
+2. Agrega la variable de entorno `NEXT_PUBLIC_API_URL` apuntando a la API en Render.
+3. Deploy. Build command y output quedan con los valores por defecto de Next.js (`next build`).
+
+## Notas
+
+- Si `NEXT_PUBLIC_API_URL` no responde, la mayoría de las pantallas públicas (inicio, catálogo de cursos) siguen mostrando contenido de referencia; las pantallas que requieren sesión (dashboard, admin) muestran un mensaje de error en vez de romperse.
+- El botón "Ver como Admin/Alumno (demo)" en la barra superior (visible solo si hay sesión iniciada) permite alternar la vista sin cerrar sesión — es una ayuda para la demo, no un cambio de rol real.

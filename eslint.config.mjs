@@ -11,6 +11,10 @@ const eslintConfig = defineConfig([
         "error",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
       ],
+      // This app fetches data in useEffect (no server components / router
+      // loaders involved) and legitimately sets loading/error state as part
+      // of that flow — the canonical pattern this rule otherwise targets.
+      "react-hooks/set-state-in-effect": "warn",
     },
   },
   // Override default ignores of eslint-config-next.

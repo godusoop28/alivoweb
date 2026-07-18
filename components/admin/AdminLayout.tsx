@@ -19,8 +19,7 @@ interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
-const LOGO_COMPACT =
-  "/alivos_logos_renombrados/alivos_logos_renombrados/logo-nav-compacto-sin-subtitulo.png";
+const LOGO_COMPACT = "/logos/logo-nav-compacto-sin-subtitulo.png";
 
 const navItems: { label: string; view: AdminView; icon: React.ReactNode; badge?: number }[] = [
   {

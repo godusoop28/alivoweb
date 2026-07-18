@@ -1,22 +1,27 @@
 "use client";
 
-import { courses, purchases, taskSubmissions } from "@/lib/mockData";
+import { useEffect, useState } from "react";
+import { getMyDashboard } from "@/lib/api/courses";
+import { StudentDashboard as StudentDashboardData } from "@/lib/api/types";
+import { useAuth } from "@/lib/auth/AuthContext";
 
 interface StudentDashboardProps {
   onOpenCourse: (courseId: string) => void;
 }
 
 const statusColor: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-700",
-  delivered: "bg-brand-100 text-brand-700",
-  reviewed: "bg-green-100 text-green-700",
-  needs_correction: "bg-red-100 text-red-700",
+  PENDING: "bg-yellow-100 text-yellow-700",
+  DELIVERED: "bg-brand-100 text-brand-700",
+  REVIEWED: "bg-green-100 text-green-700",
+  APPROVED: "bg-green-100 text-green-700",
+  NEEDS_CORRECTION: "bg-red-100 text-red-700",
 };
 const statusLabel: Record<string, string> = {
-  pending: "Pendiente",
-  delivered: "Entregada",
-  reviewed: "Revisada",
-  needs_correction: "Requiere corrección",
+  PENDING: "Pendiente",
+  DELIVERED: "Entregada",
+  REVIEWED: "Revisada",
+  APPROVED: "Aprobada",
+  NEEDS_CORRECTION: "Requiere corrección",
 };
 
 const statIcons = {
@@ -43,23 +48,49 @@ const statIcons = {
 };
 
 export default function StudentDashboard({ onOpenCourse }: StudentDashboardProps) {
-  const enrolledCourses = courses.filter((c) => c.enrolled);
-  const myPurchases = purchases.slice(0, 3);
-  const myTasks = taskSubmissions.slice(0, 3);
+  const { user } = useAuth();
+  const [data, setData] = useState<StudentDashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  const totalCompleted = enrolledCourses.reduce((acc, c) =>
-    acc + c.modules.reduce((ma, m) => ma + m.lessons.filter((l) => l.completed).length, 0), 0
-  );
-  const avgProgress = enrolledCourses.length
-    ? Math.round(enrolledCourses.reduce((acc, c) => acc + c.progress, 0) / enrolledCourses.length)
-    : 0;
+  useEffect(() => {
+    let cancelled = false;
+    getMyDashboard()
+      .then((res) => {
+        if (!cancelled) setData(res);
+      })
+      .catch(() => {
+        if (!cancelled) setError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-96 text-slate-400 text-sm">Cargando tu panel...</div>;
+  }
+
+  if (error || !data) {
+    return (
+      <div className="flex flex-col items-center justify-center h-96 gap-2 text-center px-4">
+        <p className="text-slate-500">No pudimos cargar tu panel en este momento.</p>
+        <p className="text-slate-400 text-sm">Intenta de nuevo en unos minutos.</p>
+      </div>
+    );
+  }
 
   const stats = [
-    { label: "Cursos activos", value: enrolledCourses.length, icon: statIcons.courses, color: "bg-blue-50 text-blue-600" },
-    { label: "Lecciones completadas", value: totalCompleted, icon: statIcons.lessons, color: "bg-green-50 text-green-600" },
-    { label: "Tareas pendientes", value: myTasks.filter((t) => t.status === "pending").length, icon: statIcons.tasks, color: "bg-yellow-50 text-yellow-600" },
-    { label: "Progreso promedio", value: `${avgProgress}%`, icon: statIcons.progress, color: "bg-purple-50 text-purple-600" },
+    { label: "Cursos activos", value: data.stats.activeCourses, icon: statIcons.courses, color: "bg-blue-50 text-blue-600" },
+    { label: "Lecciones completadas", value: data.stats.lessonsCompleted, icon: statIcons.lessons, color: "bg-green-50 text-green-600" },
+    { label: "Tareas pendientes", value: data.stats.pendingTasks, icon: statIcons.tasks, color: "bg-yellow-50 text-yellow-600" },
+    { label: "Progreso promedio", value: `${data.stats.avgProgress}%`, icon: statIcons.progress, color: "bg-purple-50 text-purple-600" },
   ];
+
+  const continuing = data.courses.filter((c) => c.progress > 0 && c.progress < 100)[0];
 
   return (
     <div className="min-h-screen bg-alivos-bg animate-fade-in">
@@ -68,11 +99,11 @@ export default function StudentDashboard({ onOpenCourse }: StudentDashboardProps
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-brand-600 rounded-full flex items-center justify-center text-white font-bold text-lg shrink-0">
-              MG
+              {user?.name?.charAt(0) ?? "A"}
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-alivos-dark">¡Hola, María!</h1>
-              <p className="text-slate-500 text-sm mt-0.5">Bienvenida de nuevo a tu plataforma de aprendizaje.</p>
+              <h1 className="text-2xl font-bold text-alivos-dark">¡Hola, {user?.name?.split(" ")[0] ?? "alumno"}!</h1>
+              <p className="text-slate-500 text-sm mt-0.5">Bienvenido de nuevo a tu plataforma de aprendizaje.</p>
             </div>
           </div>
         </div>
@@ -93,74 +124,65 @@ export default function StudentDashboard({ onOpenCourse }: StudentDashboardProps
         </div>
 
         {/* Continue where you left off */}
-        {enrolledCourses.some((c) => c.progress > 0 && c.progress < 100) && (
+        {continuing && (
           <div>
             <h2 className="text-lg font-bold text-alivos-dark mb-4">Continúa donde te quedaste</h2>
-            {enrolledCourses
-              .filter((c) => c.progress > 0 && c.progress < 100)
-              .slice(0, 1)
-              .map((course) => (
-                <div
-                  key={course.id}
-                  className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"
-                >
-                  <div className="flex flex-col sm:flex-row">
-                    <div className="h-40 sm:h-auto sm:w-56 bg-gradient-to-br from-brand-100 to-brand-200 shrink-0 relative overflow-hidden">
-                      {course.imageUrl && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={course.imageUrl}
-                          alt={course.title}
-                          className="w-full h-full object-cover"
-                          onError={(e) => { e.currentTarget.style.display = "none"; }}
-                        />
-                      )}
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+              <div className="flex flex-col sm:flex-row">
+                <div className="h-40 sm:h-auto sm:w-56 bg-gradient-to-br from-brand-100 to-brand-200 shrink-0 relative overflow-hidden">
+                  {continuing.imageUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={continuing.imageUrl}
+                      alt={continuing.title}
+                      className="w-full h-full object-cover"
+                      onError={(e) => { e.currentTarget.style.display = "none"; }}
+                    />
+                  )}
+                </div>
+                <div className="flex-1 p-5 sm:p-6 flex flex-col justify-between">
+                  <div>
+                    <p className="text-xs font-semibold text-brand-600 uppercase tracking-wide mb-1">
+                      {continuing.ageRange}
+                    </p>
+                    <h3 className="text-lg font-bold text-alivos-dark mb-2">{continuing.title}</h3>
+                    <p className="text-sm text-slate-500 line-clamp-2 mb-4">{continuing.shortDescription}</p>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-xs text-slate-500 mb-1.5">
+                      <span>Progreso</span>
+                      <span className="font-semibold text-brand-600">{continuing.progress}%</span>
                     </div>
-                    <div className="flex-1 p-5 sm:p-6 flex flex-col justify-between">
-                      <div>
-                        <p className="text-xs font-semibold text-brand-600 uppercase tracking-wide mb-1">
-                          {course.ageRange}
-                        </p>
-                        <h3 className="text-lg font-bold text-alivos-dark mb-2">{course.title}</h3>
-                        <p className="text-sm text-slate-500 line-clamp-2 mb-4">{course.shortDescription}</p>
-                      </div>
-                      <div>
-                        <div className="flex justify-between text-xs text-slate-500 mb-1.5">
-                          <span>Progreso</span>
-                          <span className="font-semibold text-brand-600">{course.progress}%</span>
-                        </div>
-                        <div className="h-2 bg-slate-100 rounded-full overflow-hidden mb-4">
-                          <div className="h-full bg-brand-500 rounded-full" style={{ width: `${course.progress}%` }} />
-                        </div>
-                        <button
-                          onClick={() => onOpenCourse(course.id)}
-                          className="flex items-center gap-2 px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl transition-colors"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          Continuar lección
-                        </button>
-                      </div>
+                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden mb-4">
+                      <div className="h-full bg-brand-500 rounded-full" style={{ width: `${continuing.progress}%` }} />
                     </div>
+                    <button
+                      onClick={() => onOpenCourse(continuing.slug)}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Continuar lección
+                    </button>
                   </div>
                 </div>
-              ))}
+              </div>
+            </div>
           </div>
         )}
 
         {/* Enrolled courses */}
         <div>
           <h2 className="text-lg font-bold text-alivos-dark mb-4">Mis cursos</h2>
-          <div className="grid sm:grid-cols-2 gap-4">
-            {enrolledCourses.map((course) => {
-              const totalLessons = course.modules.reduce((acc, m) => acc + m.lessons.length, 0);
-              const completedLessons = course.modules.reduce(
-                (acc, m) => acc + m.lessons.filter((l) => l.completed).length,
-                0
-              );
-              return (
+          {data.courses.length === 0 ? (
+            <div className="bg-white rounded-2xl p-8 text-center text-slate-400 text-sm border border-slate-100">
+              Todavía no tienes cursos activos.
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 gap-4">
+              {data.courses.map((course) => (
                 <div key={course.id} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
                   <div className="flex items-start gap-4">
                     <div className="w-14 h-14 rounded-xl overflow-hidden bg-gradient-to-br from-brand-100 to-brand-200 shrink-0 relative">
@@ -177,9 +199,6 @@ export default function StudentDashboard({ onOpenCourse }: StudentDashboardProps
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-brand-600 mb-0.5">{course.ageRange}</p>
                       <h3 className="font-bold text-alivos-dark truncate text-sm">{course.title}</h3>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        {completedLessons} / {totalLessons} lecciones completadas
-                      </p>
                     </div>
                   </div>
                   <div className="mt-4">
@@ -194,7 +213,7 @@ export default function StudentDashboard({ onOpenCourse }: StudentDashboardProps
                       />
                     </div>
                     <button
-                      onClick={() => onOpenCourse(course.id)}
+                      onClick={() => onOpenCourse(course.slug)}
                       className="w-full py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl transition-colors flex items-center justify-center gap-1.5"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -205,26 +224,28 @@ export default function StudentDashboard({ onOpenCourse }: StudentDashboardProps
                     </button>
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Tasks */}
         <div>
           <h2 className="text-lg font-bold text-alivos-dark mb-4">Mis tareas</h2>
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-            {myTasks.length === 0 ? (
+            {data.tasks.length === 0 ? (
               <div className="p-8 text-center text-slate-400 text-sm">No tienes tareas por ahora.</div>
             ) : (
               <div className="divide-y divide-slate-50">
-                {myTasks.map((task) => (
+                {data.tasks.map((task) => (
                   <div key={task.id} className="flex items-center gap-4 p-4 hover:bg-slate-50 transition-colors">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-alivos-dark truncate">{task.lessonTitle}</p>
                       <p className="text-xs text-slate-500 mt-0.5">{task.courseTitle}</p>
                     </div>
-                    <span className="text-xs text-slate-400 shrink-0 hidden sm:block">{task.deliveredAt}</span>
+                    <span className="text-xs text-slate-400 shrink-0 hidden sm:block">
+                      {new Date(task.deliveredAt).toLocaleDateString("es-MX")}
+                    </span>
                     <span className={`shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold ${statusColor[task.status]}`}>
                       {statusLabel[task.status]}
                     </span>
@@ -239,30 +260,36 @@ export default function StudentDashboard({ onOpenCourse }: StudentDashboardProps
         <div>
           <h2 className="text-lg font-bold text-alivos-dark mb-4">Mis compras recientes</h2>
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-            <div className="divide-y divide-slate-50">
-              {myPurchases.map((purchase) => (
-                <div key={purchase.id} className="flex items-center gap-4 p-4 hover:bg-slate-50 transition-colors">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-alivos-dark truncate">{purchase.courseTitle}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">{purchase.date} · {purchase.method}</p>
+            {data.purchases.length === 0 ? (
+              <div className="p-8 text-center text-slate-400 text-sm">Todavía no tienes compras registradas.</div>
+            ) : (
+              <div className="divide-y divide-slate-50">
+                {data.purchases.map((purchase) => (
+                  <div key={purchase.id} className="flex items-center gap-4 p-4 hover:bg-slate-50 transition-colors">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-alivos-dark truncate">{purchase.courseTitle}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {new Date(purchase.createdAt).toLocaleDateString("es-MX")} · {purchase.method === "MERCADO_PAGO" ? "Mercado Pago" : purchase.method}
+                      </p>
+                    </div>
+                    <span className="shrink-0 font-bold text-alivos-dark text-sm">
+                      ${purchase.amount.toLocaleString("es-MX")}
+                    </span>
+                    <span
+                      className={`shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                        purchase.status === "PAID"
+                          ? "bg-green-100 text-green-700"
+                          : purchase.status === "PENDING"
+                          ? "bg-yellow-100 text-yellow-700"
+                          : "bg-red-100 text-red-700"
+                      }`}
+                    >
+                      {purchase.status === "PAID" ? "Pagado" : purchase.status === "PENDING" ? "Pendiente" : "Fallido"}
+                    </span>
                   </div>
-                  <span className="shrink-0 font-bold text-alivos-dark text-sm">
-                    ${purchase.amount.toLocaleString("es-MX")}
-                  </span>
-                  <span
-                    className={`shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                      purchase.status === "paid"
-                        ? "bg-green-100 text-green-700"
-                        : purchase.status === "pending"
-                        ? "bg-yellow-100 text-yellow-700"
-                        : "bg-red-100 text-red-700"
-                    }`}
-                  >
-                    {purchase.status === "paid" ? "Pagado" : purchase.status === "pending" ? "Pendiente" : "Fallido"}
-                  </span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

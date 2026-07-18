@@ -1,32 +1,62 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getSettings, updateSettings } from "@/lib/api/settings";
+import { Settings } from "@/lib/api/types";
+
+const emptySettings: Settings = {
+  whatsapp: "",
+  email: "",
+  appointmentUrl: "",
+  instagram: "",
+  facebook: "",
+  website: "",
+  brandName: "",
+};
 
 export default function AdminSettings() {
-  const [settings, setSettings] = useState({
-    contactPhone: "+54 9 11 0000-0000",
-    contactEmail: "info@alivosestimulacion.com",
-    instagram: "@alivosestimulacion",
-    facebook: "alivosestimulacion",
-    website: "alivosestimulacion.com",
-    appointmentButtonText: "Agendar cita",
-    brandName: "ALIVOS Medicina de Rehabilitación",
-    primaryColor: "#1a3a5c",
-    whatsappNumber: "5491100000000",
-  });
+  const [settings, setSettings] = useState<Settings>(emptySettings);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+  useEffect(() => {
+    getSettings()
+      .then(({ settings }) => setSettings({ ...emptySettings, ...settings }))
+      .catch(() => setError("No se pudo cargar la configuración."))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      const { settings: updated } = await updateSettings(settings);
+      setSettings({ ...emptySettings, ...updated });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch {
+      setError("No se pudo guardar la configuración.");
+    } finally {
+      setSaving(false);
+    }
   };
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-64 text-slate-400 text-sm">Cargando configuración...</div>;
+  }
 
   return (
     <div className="space-y-6 animate-fade-in max-w-3xl">
       <div>
         <h1 className="text-2xl font-bold text-alivos-dark">Configuración</h1>
-        <p className="text-slate-500 text-sm mt-1">Ajustá los datos de contacto y marca de la plataforma</p>
+        <p className="text-slate-500 text-sm mt-1">Ajusta los datos de contacto y marca de la plataforma</p>
       </div>
+
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">{error}</div>
+      )}
 
       {saved && (
         <div className="p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-2 text-green-700 text-sm font-semibold">
@@ -47,41 +77,41 @@ export default function AdminSettings() {
         </h2>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">WhatsApp</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">WhatsApp (con código de país, sin +)</label>
             <input
               type="text"
-              value={settings.contactPhone}
-              onChange={(e) => setSettings({ ...settings, contactPhone: e.target.value })}
+              value={settings.whatsapp ?? ""}
+              onChange={(e) => setSettings({ ...settings, whatsapp: e.target.value })}
               className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
+              placeholder="5215528132020"
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">Correo de contacto</label>
             <input
               type="email"
-              value={settings.contactEmail}
-              onChange={(e) => setSettings({ ...settings, contactEmail: e.target.value })}
+              value={settings.email ?? ""}
+              onChange={(e) => setSettings({ ...settings, email: e.target.value })}
               className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
             />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Número de WhatsApp (para el botón)</label>
-            <input
-              type="text"
-              value={settings.whatsappNumber}
-              onChange={(e) => setSettings({ ...settings, whatsappNumber: e.target.value })}
-              className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
-              placeholder="5491100000000"
-            />
-            <p className="text-xs text-slate-400 mt-1">Sin + ni espacios. Ej: 5491112345678</p>
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">Sitio web</label>
             <input
               type="text"
-              value={settings.website}
+              value={settings.website ?? ""}
               onChange={(e) => setSettings({ ...settings, website: e.target.value })}
               className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">Link para agendar cita</label>
+            <input
+              type="text"
+              value={settings.appointmentUrl ?? ""}
+              onChange={(e) => setSettings({ ...settings, appointmentUrl: e.target.value })}
+              className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
+              placeholder="https://..."
             />
           </div>
         </div>
@@ -98,21 +128,19 @@ export default function AdminSettings() {
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">Instagram</label>
-            <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">@</span>
-              <input
-                type="text"
-                value={settings.instagram.replace("@", "")}
-                onChange={(e) => setSettings({ ...settings, instagram: "@" + e.target.value })}
-                className="w-full border border-slate-200 rounded-xl pl-7 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
-              />
-            </div>
+            <input
+              type="text"
+              value={settings.instagram ?? ""}
+              onChange={(e) => setSettings({ ...settings, instagram: e.target.value })}
+              className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
+              placeholder="@alivosestimulacion"
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">Facebook</label>
             <input
               type="text"
-              value={settings.facebook}
+              value={settings.facebook ?? ""}
               onChange={(e) => setSettings({ ...settings, facebook: e.target.value })}
               className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
             />
@@ -128,53 +156,26 @@ export default function AdminSettings() {
           </svg>
           Configuración de marca
         </h2>
-        <div className="grid sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Nombre de la marca</label>
-            <input
-              type="text"
-              value={settings.brandName}
-              onChange={(e) => setSettings({ ...settings, brandName: e.target.value })}
-              className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Texto del botón &quot;Agendar cita&quot;</label>
-            <input
-              type="text"
-              value={settings.appointmentButtonText}
-              onChange={(e) => setSettings({ ...settings, appointmentButtonText: e.target.value })}
-              className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Color principal</label>
-            <div className="flex items-center gap-3">
-              <input
-                type="color"
-                value={settings.primaryColor}
-                onChange={(e) => setSettings({ ...settings, primaryColor: e.target.value })}
-                className="w-12 h-10 rounded-lg border border-slate-200 cursor-pointer"
-              />
-              <input
-                type="text"
-                value={settings.primaryColor}
-                onChange={(e) => setSettings({ ...settings, primaryColor: e.target.value })}
-                className="flex-1 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300 font-mono"
-              />
-            </div>
-          </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1.5">Nombre de la marca</label>
+          <input
+            type="text"
+            value={settings.brandName ?? ""}
+            onChange={(e) => setSettings({ ...settings, brandName: e.target.value })}
+            className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
+          />
         </div>
       </div>
 
       <button
         onClick={handleSave}
-        className="flex items-center gap-2 px-6 py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl transition-colors shadow-sm"
+        disabled={saving}
+        className="flex items-center gap-2 px-6 py-3 bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white font-bold rounded-xl transition-colors shadow-sm"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
         </svg>
-        Guardar configuración
+        {saving ? "Guardando..." : "Guardar configuración"}
       </button>
     </div>
   );

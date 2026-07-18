@@ -1,12 +1,39 @@
 "use client";
 
-import { courses } from "@/lib/mockData";
+import { useEffect, useState } from "react";
+import { listCourses } from "@/lib/api/courses";
+import { getFallbackCourses } from "@/lib/api/mockFallback";
+import { Course } from "@/lib/api/types";
 
 interface CoursesPageProps {
   onOpenCourse: (courseId: string) => void;
 }
 
 export default function CoursesPage({ onOpenCourse }: CoursesPageProps) {
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    listCourses()
+      .then(({ courses }) => {
+        if (!cancelled) setCourses(courses);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setCourses(getFallbackCourses());
+          setError(true);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-alivos-bg animate-fade-in">
       {/* Header */}
@@ -21,6 +48,27 @@ export default function CoursesPage({ onOpenCourse }: CoursesPageProps) {
 
       {/* Course grid */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        {error && (
+          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl text-sm text-yellow-700">
+            No pudimos conectar con el servidor en este momento. Mostrando un catálogo de referencia.
+          </div>
+        )}
+        {loading ? (
+          <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 animate-pulse">
+                <div className="h-48 bg-slate-100" />
+                <div className="p-5 space-y-2">
+                  <div className="h-4 bg-slate-100 rounded w-3/4" />
+                  <div className="h-3 bg-slate-100 rounded w-full" />
+                  <div className="h-3 bg-slate-100 rounded w-2/3" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : courses.length === 0 ? (
+          <div className="text-center py-16 text-slate-400">No hay cursos disponibles por ahora.</div>
+        ) : (
         <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-6">
           {courses.map((course) => {
             const totalLessons = course.modules.reduce((acc, m) => acc + m.lessons.length, 0);
@@ -49,7 +97,7 @@ export default function CoursesPage({ onOpenCourse }: CoursesPageProps) {
 
                   {/* Badges */}
                   <div className="absolute top-3 left-3 flex gap-1.5">
-                    {course.status === "published" && (
+                    {course.status === "PUBLISHED" && (
                       <span className="bg-white/90 text-green-700 text-xs font-bold px-2.5 py-0.5 rounded-full backdrop-blur-sm">
                         Disponible
                       </span>
@@ -129,7 +177,7 @@ export default function CoursesPage({ onOpenCourse }: CoursesPageProps) {
                     </div>
                     {course.enrolled ? (
                       <button
-                        onClick={() => onOpenCourse(course.id)}
+                        onClick={() => onOpenCourse(course.slug)}
                         className="w-full py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 text-sm"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -152,6 +200,7 @@ export default function CoursesPage({ onOpenCourse }: CoursesPageProps) {
             );
           })}
         </div>
+        )}
       </div>
     </div>
   );

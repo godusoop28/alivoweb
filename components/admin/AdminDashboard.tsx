@@ -1,6 +1,8 @@
 "use client";
 
-import { adminStats, purchases, taskSubmissions, courses } from "@/lib/mockData";
+import { useEffect, useState } from "react";
+import { getAdminDashboard } from "@/lib/api/admin";
+import { AdminDashboard as AdminDashboardData } from "@/lib/api/types";
 
 const statIcons = {
   students: (
@@ -25,36 +27,67 @@ const statIcons = {
   ),
 };
 
+const taskStatusLabel: Record<string, string> = {
+  PENDING: "Sin entregar",
+  DELIVERED: "Entregada",
+};
+
 export default function AdminDashboard() {
-  const recentPurchases = purchases.slice(0, 4);
-  const pendingTasks = taskSubmissions.filter((t) => t.status === "pending" || t.status === "delivered");
+  const [data, setData] = useState<AdminDashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    getAdminDashboard()
+      .then((res) => {
+        if (!cancelled) setData(res);
+      })
+      .catch(() => {
+        if (!cancelled) setError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-64 text-slate-400 text-sm">Cargando dashboard...</div>;
+  }
+
+  if (error || !data) {
+    return (
+      <div className="flex items-center justify-center h-64 text-slate-500 text-sm">
+        No pudimos cargar el dashboard. Verifica que la API esté disponible.
+      </div>
+    );
+  }
 
   const stats = [
     {
       label: "Total alumnos",
-      value: adminStats.totalStudents,
-      change: "+5 este mes",
+      value: data.stats.totalStudents,
       icon: statIcons.students,
       color: "bg-blue-50 text-blue-600",
     },
     {
       label: "Cursos publicados",
-      value: adminStats.publishedCourses,
-      change: "Todos activos",
+      value: data.stats.publishedCourses,
       icon: statIcons.courses,
       color: "bg-purple-50 text-purple-600",
     },
     {
       label: "Ventas del mes",
-      value: `$${adminStats.monthlyRevenue.toLocaleString("es-MX")}`,
-      change: "+12% vs mes anterior",
+      value: `$${data.stats.monthlyRevenue.toLocaleString("es-MX")}`,
       icon: statIcons.revenue,
       color: "bg-green-50 text-green-600",
     },
     {
       label: "Tareas pendientes",
-      value: adminStats.pendingTasks,
-      change: "Por revisar",
+      value: data.stats.pendingTasks,
       icon: statIcons.tasks,
       color: "bg-orange-50 text-orange-600",
     },
@@ -76,7 +109,6 @@ export default function AdminDashboard() {
             </div>
             <div className="text-2xl font-black text-alivos-dark mb-0.5">{stat.value}</div>
             <div className="text-sm text-slate-500 mb-1">{stat.label}</div>
-            <div className="text-xs text-slate-400">{stat.change}</div>
           </div>
         ))}
       </div>
@@ -89,31 +121,35 @@ export default function AdminDashboard() {
             <span className="text-xs text-slate-400 bg-slate-50 px-2 py-1 rounded-full">Mercado Pago</span>
           </div>
           <div className="divide-y divide-slate-50">
-            {recentPurchases.map((purchase) => (
-              <div key={purchase.id} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50 transition-colors">
-                <div className="w-8 h-8 bg-brand-100 rounded-full flex items-center justify-center text-brand-700 text-xs font-bold shrink-0">
-                  {purchase.studentName.charAt(0)}
+            {data.recentPurchases.length === 0 ? (
+              <div className="px-5 py-8 text-center text-slate-400 text-sm">Todavía no hay compras registradas.</div>
+            ) : (
+              data.recentPurchases.map((purchase) => (
+                <div key={purchase.id} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50 transition-colors">
+                  <div className="w-8 h-8 bg-brand-100 rounded-full flex items-center justify-center text-brand-700 text-xs font-bold shrink-0">
+                    {purchase.studentName.charAt(0)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-alivos-dark truncate">{purchase.studentName}</p>
+                    <p className="text-xs text-slate-500 truncate">{purchase.courseTitle}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-bold text-alivos-dark">${purchase.amount.toLocaleString("es-MX")}</p>
+                    <span
+                      className={`text-xs font-semibold ${
+                        purchase.status === "PAID"
+                          ? "text-green-600"
+                          : purchase.status === "PENDING"
+                          ? "text-yellow-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      {purchase.status === "PAID" ? "Pagado" : purchase.status === "PENDING" ? "Pendiente" : "Fallido"}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-alivos-dark truncate">{purchase.studentName}</p>
-                  <p className="text-xs text-slate-500 truncate">{purchase.courseTitle}</p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-sm font-bold text-alivos-dark">${purchase.amount.toLocaleString("es-MX")}</p>
-                  <span
-                    className={`text-xs font-semibold ${
-                      purchase.status === "paid"
-                        ? "text-green-600"
-                        : purchase.status === "pending"
-                        ? "text-yellow-600"
-                        : "text-red-600"
-                    }`}
-                  >
-                    {purchase.status === "paid" ? "Pagado" : purchase.status === "pending" ? "Pendiente" : "Fallido"}
-                  </span>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
@@ -121,14 +157,14 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
           <div className="px-5 py-4 border-b border-slate-50 flex items-center justify-between">
             <h2 className="font-bold text-alivos-dark">Tareas por revisar</h2>
-            {pendingTasks.length > 0 && (
+            {data.pendingTasks.length > 0 && (
               <span className="bg-red-100 text-red-600 text-xs font-bold px-2.5 py-0.5 rounded-full">
-                {pendingTasks.length}
+                {data.pendingTasks.length}
               </span>
             )}
           </div>
           <div className="divide-y divide-slate-50">
-            {pendingTasks.map((task) => (
+            {data.pendingTasks.map((task) => (
               <div key={task.id} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50 transition-colors">
                 <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center text-orange-700 text-xs font-bold shrink-0">
                   {task.studentName.charAt(0)}
@@ -137,14 +173,12 @@ export default function AdminDashboard() {
                   <p className="text-sm font-medium text-alivos-dark truncate">{task.studentName}</p>
                   <p className="text-xs text-slate-500 truncate">{task.lessonTitle}</p>
                 </div>
-                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${
-                  task.status === "pending" ? "bg-slate-100 text-slate-600" : "bg-blue-100 text-blue-700"
-                }`}>
-                  {task.status === "pending" ? "Sin entregar" : "Entregada"}
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 bg-blue-100 text-blue-700">
+                  {taskStatusLabel[task.status] ?? task.status}
                 </span>
               </div>
             ))}
-            {pendingTasks.length === 0 && (
+            {data.pendingTasks.length === 0 && (
               <div className="px-5 py-8 text-center text-slate-400 text-sm">
                 No hay tareas pendientes
               </div>
@@ -159,7 +193,7 @@ export default function AdminDashboard() {
           <h2 className="font-bold text-alivos-dark">Actividad por curso</h2>
         </div>
         <div className="divide-y divide-slate-50">
-          {courses.map((course) => (
+          {data.courses.map((course) => (
             <div key={course.id} className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 transition-colors">
               <div className="w-10 h-10 rounded-xl overflow-hidden bg-brand-100 shrink-0 relative">
                 {course.imageUrl && (
@@ -182,21 +216,19 @@ export default function AdminDashboard() {
                   <p className="text-xs text-slate-400">alumnos</p>
                 </div>
                 <div className="hidden md:block text-center">
-                  <p className="font-bold text-alivos-dark">
-                    {course.modules.reduce((acc, m) => acc + m.lessons.length, 0)}
-                  </p>
+                  <p className="font-bold text-alivos-dark">{course.lessonsCount}</p>
                   <p className="text-xs text-slate-400">lecciones</p>
                 </div>
                 <span
                   className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                    course.status === "published"
+                    course.status === "PUBLISHED"
                       ? "bg-green-100 text-green-700"
-                      : course.status === "draft"
+                      : course.status === "DRAFT"
                       ? "bg-yellow-100 text-yellow-700"
                       : "bg-slate-100 text-slate-500"
                   }`}
                 >
-                  {course.status === "published" ? "Publicado" : course.status === "draft" ? "Borrador" : "Oculto"}
+                  {course.status === "PUBLISHED" ? "Publicado" : course.status === "DRAFT" ? "Borrador" : "Oculto"}
                 </span>
               </div>
             </div>

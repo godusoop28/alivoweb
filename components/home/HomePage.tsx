@@ -1,14 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
-import { courses } from "@/lib/mockData";
+import { listCourses } from "@/lib/api/courses";
+import { getFallbackCourses } from "@/lib/api/mockFallback";
+import { Course } from "@/lib/api/types";
+import { alivosAssets } from "@/lib/assets/alivosAssets";
 
-const LOGO_VERTICAL =
-  "/alivos_logos_renombrados/alivos_logos_renombrados/logo-inicio-vertical-completo.png";
-
-const HERO_IMAGE =
-  "https://images.unsplash.com/photo-1555252333-9f8e92e65df9?auto=format&fit=crop&w=1920&q=80";
+const LOGO_VERTICAL = "/logos/logo-inicio-vertical-completo.png";
 
 interface HomePageProps {
   onNavigate: (view: "courses" | "contact" | "course" | "dashboard", courseId?: string) => void;
@@ -78,6 +77,25 @@ const steps = [
 
 export default function HomePage({ onNavigate }: HomePageProps) {
   const [logoError, setLogoError] = useState(false);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    listCourses()
+      .then(({ courses }) => {
+        if (!cancelled) setCourses(courses);
+      })
+      .catch(() => {
+        if (!cancelled) setCourses(getFallbackCourses());
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const featuredCourses = courses.slice(0, 4);
 
@@ -87,7 +105,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
       <section
         className="relative text-white overflow-hidden"
         style={{
-          background: `linear-gradient(135deg, rgba(26,58,92,0.92) 0%, rgba(26,58,92,0.78) 50%, rgba(37,99,235,0.60) 100%), url('${HERO_IMAGE}') center/cover no-repeat`,
+          background: `linear-gradient(135deg, rgba(26,58,92,0.92) 0%, rgba(26,58,92,0.78) 50%, rgba(37,99,235,0.60) 100%), url('${alivosAssets.home.hero}') center/cover no-repeat`,
           minHeight: "580px",
         }}
       >
@@ -155,6 +173,35 @@ export default function HomePage({ onNavigate }: HomePageProps) {
         </div>
       </section>
 
+      {/* Bienvenida */}
+      <section className="py-14 sm:py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-10 items-center">
+            <div className="rounded-3xl overflow-hidden shadow-lg border border-slate-100 order-2 lg:order-1">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={alivosAssets.home.welcome}
+                alt="Bienvenida al curso de estimulación temprana ALIVOS"
+                className="w-full h-full object-cover aspect-[4/3]"
+              />
+            </div>
+            <div className="order-1 lg:order-2">
+              <h2 className="text-3xl sm:text-4xl font-bold text-alivos-dark mb-4">
+                Bienvenida a la comunidad ALIVOS
+              </h2>
+              <p className="text-slate-600 leading-relaxed mb-4">
+                Nuestro equipo de especialistas en rehabilitación pediátrica te acompaña con guías claras,
+                paso a paso, para que aprendas a estimular el desarrollo de tu bebé desde el primer día.
+              </p>
+              <p className="text-slate-600 leading-relaxed">
+                Cada curso está pensado para que puedas avanzar a tu propio ritmo, con videos, materiales
+                descargables y retroalimentación personalizada del equipo de ALIVOS Medicina de Rehabilitación.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Benefits strip */}
       <section className="py-14 sm:py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -202,7 +249,21 @@ export default function HomePage({ onNavigate }: HomePageProps) {
             </button>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {featuredCourses.map((course) => (
+            {loading &&
+              Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 animate-pulse"
+                >
+                  <div className="h-40 bg-slate-100" />
+                  <div className="p-4 space-y-2">
+                    <div className="h-4 bg-slate-100 rounded w-3/4" />
+                    <div className="h-3 bg-slate-100 rounded w-full" />
+                    <div className="h-3 bg-slate-100 rounded w-2/3" />
+                  </div>
+                </div>
+              ))}
+            {!loading && featuredCourses.map((course) => (
               <div
                 key={course.id}
                 className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md border border-slate-100 hover:border-brand-200 transition-all group cursor-pointer"
@@ -263,11 +324,22 @@ export default function HomePage({ onNavigate }: HomePageProps) {
       {/* How it works */}
       <section className="py-14 sm:py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-alivos-dark mb-3">¿Cómo funciona?</h2>
-            <p className="text-lg text-slate-500 max-w-xl mx-auto">
-              Comenzar es sencillo y rápido. En minutos ya puedes ver tu primera lección.
-            </p>
+          <div className="grid lg:grid-cols-2 gap-10 items-center mb-14">
+            <div>
+              <h2 className="text-3xl sm:text-4xl font-bold text-alivos-dark mb-3">¿Cómo funciona?</h2>
+              <p className="text-lg text-slate-500 max-w-xl">
+                Comenzar es sencillo y rápido. En minutos ya puedes ver tu primera lección desde tu celular
+                o computadora, sin instalar nada.
+              </p>
+            </div>
+            <div className="rounded-3xl overflow-hidden shadow-lg border border-slate-100">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={alivosAssets.home.platformGuide}
+                alt="Cómo usar la plataforma ALIVOS desde una tablet"
+                className="w-full h-full object-cover aspect-[4/3]"
+              />
+            </div>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {steps.map((step, i) => (
@@ -298,6 +370,16 @@ export default function HomePage({ onNavigate }: HomePageProps) {
 
       {/* Companion strip */}
       <section className="py-14 sm:py-16 bg-alivos-bg">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 mb-10">
+          <div className="rounded-3xl overflow-hidden shadow-md border border-slate-100">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={alivosAssets.home.babiesBannerHorizontal}
+              alt="Bebés acompañados por el equipo de ALIVOS"
+              className="w-full h-auto object-cover max-h-72"
+            />
+          </div>
+        </div>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <h2 className="text-2xl sm:text-3xl font-bold text-alivos-dark mb-4">
             Diseñado para acompañarte desde casa
