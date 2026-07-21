@@ -321,19 +321,15 @@ export default function CourseViewer({ courseId, onBack }: CourseViewerProps) {
                       allowFullScreen
                       title={currentLesson.title}
                     />
-                  ) : (
+                  ) : currentLesson.vimeoThumbnail || currentLesson.imageUrl ? (
                     <div
-                      className="w-full h-full flex items-center justify-center relative"
-                      style={
-                        currentLesson.vimeoThumbnail
-                          ? {
-                              backgroundImage: `linear-gradient(rgba(15,23,42,0.55), rgba(15,23,42,0.75)), url('${currentLesson.vimeoThumbnail}')`,
-                              backgroundSize: "cover",
-                              backgroundPosition: "center",
-                            }
-                          : undefined
-                      }
-                    >
+                      className="w-full h-full bg-cover bg-center"
+                      style={{
+                        backgroundImage: `url('${currentLesson.vimeoThumbnail ?? currentLesson.imageUrl}')`,
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center relative">
                       <div className="text-center text-white px-6">
                         <div className="w-16 h-16 rounded-full bg-white/15 flex items-center justify-center mx-auto mb-4">
                           <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import LoginModal from "@/components/auth/LoginModal";
 
 const LOGO_H = "/logos/logo-nav-horizontal-completo.png";
-const LOGO_C = "/logos/logo-nav-compacto-sin-subtitulo.png";
+const LOGO_ICON = "/logos/logo-icono-isotipo.png";
 
 type AppMode = "student" | "admin";
 type View =
@@ -26,25 +26,26 @@ export default function Navbar({ mode, currentView, onNavigate, onToggleMode }: 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [logoError, setLogoError] = useState(false);
-  const [compactLogoError, setCompactLogoError] = useState(false);
+  const [iconError, setIconError] = useState(false);
 
-  const studentLinks: { label: string; view: View }[] = [
+  const publicLinks: { label: string; view: View }[] = [
     { label: "Inicio", view: "home" },
     { label: "Cursos", view: "courses" },
-    { label: "Mis Cursos", view: "dashboard" },
     { label: "Contacto", view: "contact" },
   ];
 
   const isActive = (view: View) =>
     currentView === view || (view === "courses" && currentView === "course");
 
+  const showBigMobileHeader = mode === "student" && currentView !== "course";
+
   return (
     <>
       {loginOpen && <LoginModal onClose={() => setLoginOpen(false)} />}
 
-      {/* Session / demo bar */}
+      {/* Demo session bar — only visible once someone is logged in */}
       {user && (
-        <div className="bg-alivos-dark border-b border-white/10 px-4 sm:px-6 py-1.5 flex items-center justify-between gap-3">
+        <div className="bg-alivos-dark px-4 sm:px-6 py-1.5 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-xs min-w-0">
             <span
               className={`inline-block w-1.5 h-1.5 rounded-full shrink-0 ${
@@ -77,163 +78,235 @@ export default function Navbar({ mode, currentView, onNavigate, onToggleMode }: 
         </div>
       )}
 
-      {/* Main navbar */}
-      <nav className="sticky top-0 z-40 bg-white border-b border-slate-100 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
+      {/* Desktop / tablet navbar — hidden on mobile for the public site */}
+      <nav className="relative md:sticky md:top-0 z-40 bg-white border-b border-slate-100">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="hidden md:flex items-center justify-between h-[72px]">
             <button
               onClick={() => onNavigate(mode === "admin" ? "admin-dashboard" : "home")}
               className="flex items-center shrink-0"
               aria-label="Ir al inicio"
             >
-              <div className="hidden sm:block">
-                {logoError ? (
-                  <span className="text-alivos-dark font-black text-xl tracking-tight">ALIVOS</span>
-                ) : (
-                  <Image
-                    src={LOGO_H}
-                    alt="ALIVOS Medicina de Rehabilitación"
-                    width={180}
-                    height={44}
-                    className="h-10 w-auto object-contain"
-                    onError={() => setLogoError(true)}
-                    priority
-                  />
-                )}
-              </div>
-              <div className="sm:hidden">
-                {compactLogoError ? (
-                  <span className="text-alivos-dark font-black text-xl">ALIVOS</span>
-                ) : (
-                  <Image
-                    src={LOGO_C}
-                    alt="ALIVOS"
-                    width={120}
-                    height={40}
-                    className="h-9 w-auto object-contain"
-                    onError={() => setCompactLogoError(true)}
-                    priority
-                  />
-                )}
-              </div>
+              {logoError ? (
+                <span className="text-alivos-dark font-black text-xl tracking-tight">ALIVOS</span>
+              ) : (
+                <Image
+                  src={LOGO_H}
+                  alt="ALIVOS Medicina de Rehabilitación"
+                  width={190}
+                  height={46}
+                  className="h-11 w-auto object-contain"
+                  onError={() => setLogoError(true)}
+                  priority
+                />
+              )}
             </button>
 
-            {/* Student nav links */}
             {mode === "student" && (
-              <div className="hidden md:flex items-center gap-0.5">
-                {studentLinks.map((link) => (
+              <div className="flex items-center gap-8">
+                {publicLinks.map((link) => (
                   <button
                     key={link.view}
                     onClick={() => onNavigate(link.view)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    className={`text-sm font-medium transition-colors ${
                       isActive(link.view)
-                        ? "bg-brand-50 text-brand-700 font-semibold"
-                        : "text-slate-600 hover:text-alivos-dark hover:bg-slate-50"
+                        ? "text-success-700 font-semibold"
+                        : "text-slate-700 hover:text-success-700"
                     }`}
                   >
                     {link.label}
                   </button>
                 ))}
+                {user?.role === "STUDENT" && (
+                  <button
+                    onClick={() => onNavigate("dashboard")}
+                    className={`text-sm font-medium transition-colors ${
+                      isActive("dashboard") ? "text-success-700 font-semibold" : "text-slate-500 hover:text-success-700"
+                    }`}
+                  >
+                    Mis cursos
+                  </button>
+                )}
               </div>
             )}
 
-            {/* Admin breadcrumb */}
             {mode === "admin" && (
-              <div className="hidden md:flex items-center">
-                <span className="text-xs font-bold text-alivos-dark/60 uppercase tracking-widest bg-alivos-light px-3 py-1.5 rounded-full">
-                  Panel Administrador
-                </span>
-              </div>
+              <span className="text-xs font-bold text-alivos-dark/60 uppercase tracking-widest bg-alivos-light px-3 py-1.5 rounded-full">
+                Panel Administrador
+              </span>
             )}
 
-            {/* Right side actions */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-4 shrink-0">
               {mode === "student" && (
-                <button className="hidden sm:flex items-center gap-1.5 px-4 py-2 bg-success-600 hover:bg-success-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                <button
+                  onClick={() => onNavigate(user?.role === "STUDENT" ? "dashboard" : "home")}
+                  className="relative text-slate-500 hover:text-success-700 transition-colors"
+                  aria-label="Mis cursos"
+                  title="Mis cursos"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M6 2L4 6v14a2 2 0 002 2h12a2 2 0 002-2V6l-2-4M6 2h12M6 2l-.01.01M9 10a3 3 0 006 0" />
                   </svg>
-                  Agendar cita
+                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-success-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                    0
+                  </span>
+                </button>
+              )}
+
+              {mode === "student" && (
+                <button
+                  onClick={() => onNavigate("contact")}
+                  className="px-5 py-2 bg-success-600 hover:bg-success-700 text-white rounded-full text-sm font-semibold transition-colors"
+                >
+                  Agendar Cita
                 </button>
               )}
 
               {user ? (
-                <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-slate-100">
-                  <div className="w-8 h-8 bg-brand-100 rounded-full flex items-center justify-center text-brand-700 text-xs font-bold shrink-0">
-                    {user.name.charAt(0)}
-                  </div>
+                <div className="w-8 h-8 bg-brand-600 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0">
+                  {user.name.charAt(0)}
                 </div>
               ) : (
                 <button
                   onClick={() => setLoginOpen(true)}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm"
+                  className="text-sm font-medium text-slate-500 hover:text-success-700 transition-colors"
                 >
                   Ingresar
                 </button>
               )}
-
-              {mode === "student" && (
-                <button
-                  onClick={() => setMobileOpen(!mobileOpen)}
-                  className="md:hidden p-2 text-slate-500 hover:text-brand-700 hover:bg-slate-50 rounded-lg transition-colors"
-                  aria-label="Menú"
-                >
-                  {mobileOpen ? (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  ) : (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
-                  )}
-                </button>
-              )}
             </div>
           </div>
+
+          {/* Mobile header — logo + hamburger row, then big site title/tagline */}
+          {mode === "student" ? (
+            showBigMobileHeader ? (
+              <div className="md:hidden py-4">
+                <div className="flex items-center justify-between mb-3">
+                  <button onClick={() => onNavigate("home")} aria-label="Ir al inicio" className="shrink-0">
+                    {iconError ? (
+                      <span className="text-alivos-dark font-black text-lg">+ALIVOS</span>
+                    ) : (
+                      <Image
+                        src={LOGO_ICON}
+                        alt="ALIVOS"
+                        width={32}
+                        height={32}
+                        className="h-8 w-auto object-contain"
+                        onError={() => setIconError(true)}
+                        priority
+                      />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setMobileOpen(!mobileOpen)}
+                    className="p-1 text-success-700"
+                    aria-label="Menú"
+                  >
+                    {mobileOpen ? (
+                      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    ) : (
+                      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7h16M4 12h16M4 17h16" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+                <h1 className="text-2xl font-bold text-slate-900 leading-tight">
+                  Alivos - Educación a distancia
+                </h1>
+                <p className="text-sm text-slate-500 mt-1">Cursos de Estimulación Temprana</p>
+              </div>
+            ) : (
+              <div className="md:hidden flex items-center justify-between h-16">
+                <button onClick={() => onNavigate("home")} aria-label="Ir al inicio" className="shrink-0">
+                  {iconError ? (
+                    <span className="text-alivos-dark font-black text-lg">+ALIVOS</span>
+                  ) : (
+                    <Image
+                      src={LOGO_ICON}
+                      alt="ALIVOS"
+                      width={30}
+                      height={30}
+                      className="h-7 w-auto object-contain"
+                      onError={() => setIconError(true)}
+                    />
+                  )}
+                </button>
+                <button
+                  onClick={() => setMobileOpen(!mobileOpen)}
+                  className="p-1 text-success-700"
+                  aria-label="Menú"
+                >
+                  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7h16M4 12h16M4 17h16" />
+                  </svg>
+                </button>
+              </div>
+            )
+          ) : (
+            <div className="md:hidden flex items-center h-16">
+              <span className="text-xs font-bold text-alivos-dark/60 uppercase tracking-widest">
+                Panel Administrador
+              </span>
+            </div>
+          )}
         </div>
 
-        {/* Mobile menu */}
+        {/* Mobile dropdown menu (public site only) */}
         {mode === "student" && mobileOpen && (
           <div className="md:hidden border-t border-slate-100 bg-white">
             <div className="px-4 py-3 space-y-1">
-              {studentLinks.map((link) => (
+              {mode === "student" &&
+                publicLinks.map((link) => (
+                  <button
+                    key={link.view}
+                    onClick={() => { onNavigate(link.view); setMobileOpen(false); }}
+                    className={`w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                      isActive(link.view)
+                        ? "bg-success-50 text-success-700"
+                        : "text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    {link.label}
+                  </button>
+                ))}
+              {mode === "student" && user?.role === "STUDENT" && (
                 <button
-                  key={link.view}
-                  onClick={() => { onNavigate(link.view); setMobileOpen(false); }}
+                  onClick={() => { onNavigate("dashboard"); setMobileOpen(false); }}
                   className={`w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                    isActive(link.view)
-                      ? "bg-brand-50 text-brand-700"
-                      : "text-slate-600 hover:bg-slate-50"
+                    isActive("dashboard") ? "bg-success-50 text-success-700" : "text-slate-600 hover:bg-slate-50"
                   }`}
                 >
-                  {link.label}
+                  Mis cursos
                 </button>
-              ))}
+              )}
               <div className="pt-2 border-t border-slate-100 space-y-2">
-                {!user && (
+                {mode === "student" && !user && (
                   <button
                     onClick={() => { setLoginOpen(true); setMobileOpen(false); }}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-600 text-white rounded-lg text-sm font-semibold"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-full text-sm font-semibold"
                   >
                     Ingresar
                   </button>
                 )}
-                {user && (
+                {mode === "student" && user && (
                   <button
                     onClick={() => { logout(); setMobileOpen(false); }}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-lg text-sm font-semibold"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-full text-sm font-semibold"
                   >
                     Cerrar sesión ({user.name})
                   </button>
                 )}
-                <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-success-600 text-white rounded-lg text-sm font-semibold">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  Agendar cita
-                </button>
+                {mode === "student" && (
+                  <button
+                    onClick={() => { onNavigate("contact"); setMobileOpen(false); }}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-success-600 text-white rounded-full text-sm font-semibold"
+                  >
+                    Agendar Cita
+                  </button>
+                )}
               </div>
             </div>
           </div>

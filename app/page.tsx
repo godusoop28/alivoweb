@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { useAuth } from "@/lib/auth/AuthContext";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import HomePage from "@/components/home/HomePage";
 import CoursesPage from "@/components/courses/CoursesPage";
@@ -169,6 +170,7 @@ export default function App() {
       <main className="flex-1">
         {renderStudentContent()}
       </main>
+      {currentView !== "course" && <Footer />}
       <WhatsAppButton />
     </div>
   );

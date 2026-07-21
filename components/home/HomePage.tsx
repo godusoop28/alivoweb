@@ -1,84 +1,60 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import { listCourses } from "@/lib/api/courses";
 import { getFallbackCourses } from "@/lib/api/mockFallback";
-import { Course } from "@/lib/api/types";
+import { Course, Lesson } from "@/lib/api/types";
 import { alivosAssets } from "@/lib/assets/alivosAssets";
-
-const LOGO_VERTICAL = "/logos/logo-inicio-vertical-completo.png";
 
 interface HomePageProps {
   onNavigate: (view: "courses" | "contact" | "course" | "dashboard", courseId?: string) => void;
 }
 
-const benefits = [
-  {
-    icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-      </svg>
-    ),
-    title: "Desde tu hogar",
-    description: "Accede a todos los contenidos cuando quieras, desde cualquier dispositivo, sin salir de casa.",
-  },
-  {
-    icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.362a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-      </svg>
-    ),
-    title: "Videos guiados",
-    description: "Clases en video explicadas por especialistas de ALIVOS Medicina de Rehabilitación.",
-  },
-  {
-    icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-      </svg>
-    ),
-    title: "Avanza por módulos",
-    description: "Estructura clara en módulos y lecciones para aprender de manera progresiva y a tu ritmo.",
-  },
-  {
-    icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-      </svg>
-    ),
-    title: "Acompañamiento profesional",
-    description: "Consulta dudas y recibe retroalimentación personalizada del equipo de ALIVOS.",
-  },
-];
+function findFirstVideo(courses: Course[]): Lesson | null {
+  for (const course of courses) {
+    for (const courseModule of course.modules) {
+      for (const lesson of courseModule.lessons) {
+        if (lesson.vimeoEmbedUrl) return lesson;
+      }
+    }
+  }
+  return null;
+}
 
-const steps = [
-  {
-    step: "01",
-    title: "Elige tu curso",
-    description: "Selecciona el curso que corresponde a la etapa de desarrollo de tu bebé.",
-  },
-  {
-    step: "02",
-    title: "Accede al contenido",
-    description: "Una vez realizado el pago, accedes de inmediato a todos los módulos y materiales.",
-  },
-  {
-    step: "03",
-    title: "Aprende a tu ritmo",
-    description: "Mira los videos, descarga materiales y completa las actividades cuando puedas.",
-  },
-  {
-    step: "04",
-    title: "Realiza las tareas",
-    description: "Envía tus tareas y recibe correcciones personalizadas del equipo de especialistas.",
-  },
-];
+function VideoOrImage({
+  embedUrl,
+  imageUrl,
+  alt,
+  title,
+}: {
+  embedUrl?: string | null;
+  imageUrl: string;
+  alt: string;
+  title: string;
+}) {
+  if (embedUrl) {
+    return (
+      <div className="aspect-video w-full overflow-hidden bg-black">
+        <iframe
+          src={embedUrl}
+          className="w-full h-full"
+          allow="autoplay; fullscreen; picture-in-picture"
+          allowFullScreen
+          title={title}
+        />
+      </div>
+    );
+  }
+  return (
+    <div className="aspect-video w-full overflow-hidden">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={imageUrl} alt={alt} className="w-full h-full object-cover" />
+    </div>
+  );
+}
 
 export default function HomePage({ onNavigate }: HomePageProps) {
-  const [logoError, setLogoError] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -88,367 +64,183 @@ export default function HomePage({ onNavigate }: HomePageProps) {
       })
       .catch(() => {
         if (!cancelled) setCourses(getFallbackCourses());
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
       });
     return () => {
       cancelled = true;
     };
   }, []);
 
-  const featuredCourses = courses.slice(0, 4);
+  const modules = courses.slice(0, 4);
+  const welcomeVideo = findFirstVideo(courses);
 
   return (
     <div className="animate-fade-in">
       {/* Hero */}
       <section
-        className="relative text-white overflow-hidden"
+        className="relative flex items-center justify-center text-center min-h-[420px] sm:min-h-[560px] lg:min-h-[640px] bg-alivos-dark bg-cover bg-center"
         style={{
-          background: `linear-gradient(135deg, rgba(26,58,92,0.92) 0%, rgba(26,58,92,0.78) 50%, rgba(37,99,235,0.60) 100%), url('${alivosAssets.home.hero}') center/cover no-repeat`,
-          minHeight: "580px",
+          backgroundImage: `linear-gradient(rgba(15,23,42,0.45), rgba(15,23,42,0.45)), url('${alivosAssets.home.hero}')`,
         }}
       >
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 lg:py-36">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 text-blue-200 text-xs font-semibold px-4 py-1.5 rounded-full mb-6 backdrop-blur-sm">
-                <span className="w-2 h-2 bg-green-400 rounded-full" />
-                ALIVOS Medicina de Rehabilitación
-              </div>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-6">
-                Cursos de{" "}
-                <span className="text-blue-300">Estimulación</span>{" "}
-                Temprana
-              </h1>
-              <p className="text-lg sm:text-xl text-blue-100/90 leading-relaxed mb-8 max-w-lg mx-auto lg:mx-0">
-                Aprende con una guía clara, profesional y pensada para acompañar
-                el desarrollo de tu bebé desde casa.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
-                <button
-                  onClick={() => onNavigate("courses")}
-                  className="px-8 py-3.5 bg-white text-alivos-dark font-bold rounded-xl hover:bg-blue-50 transition-colors shadow-lg text-base"
-                >
-                  Ver cursos
-                </button>
-                <button
-                  onClick={() => onNavigate("contact")}
-                  className="px-8 py-3.5 bg-success-600 hover:bg-success-700 text-white font-bold rounded-xl transition-colors shadow-lg text-base"
-                >
-                  Agendar cita
-                </button>
-              </div>
-            </div>
-
-            {/* Logo / Floating card */}
-            <div className="hidden lg:flex items-center justify-center">
-              <div className="relative">
-                <div className="w-72 h-72 bg-white/10 rounded-3xl flex items-center justify-center backdrop-blur-sm border border-white/20 shadow-2xl">
-                  {logoError ? (
-                    <div className="text-center text-white">
-                      <div className="text-6xl font-black mb-2">A</div>
-                      <div className="text-xl font-bold">ALIVOS</div>
-                      <div className="text-sm text-blue-200 mt-1">Medicina de Rehabilitación</div>
-                    </div>
-                  ) : (
-                    <Image
-                      src={LOGO_VERTICAL}
-                      alt="ALIVOS Medicina de Rehabilitación"
-                      width={220}
-                      height={220}
-                      className="object-contain p-8"
-                      onError={() => setLogoError(true)}
-                    />
-                  )}
-                </div>
-                {/* Floating stat card */}
-                <div className="absolute -bottom-4 -right-4 bg-white text-alivos-dark rounded-2xl px-4 py-3 shadow-xl border border-slate-100">
-                  <p className="text-2xl font-black">+244</p>
-                  <p className="text-xs text-slate-500 font-medium">familias acompañadas</p>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div className="relative z-10 px-4">
+          <h1 className="text-3xl sm:text-5xl font-bold text-white mb-6 sm:mb-8 max-w-3xl mx-auto leading-tight">
+            Cursos de Estimulación Temprana
+          </h1>
+          <button
+            onClick={() => onNavigate("courses")}
+            className="px-9 py-3 bg-success-600 hover:bg-success-700 text-white font-semibold rounded-full transition-colors shadow-md"
+          >
+            Cursos
+          </button>
         </div>
-      </section>
 
-      {/* Bienvenida */}
-      <section className="py-14 sm:py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-10 items-center">
-            <div className="rounded-3xl overflow-hidden shadow-lg border border-slate-100 order-2 lg:order-1">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={alivosAssets.home.welcome}
-                alt="Bienvenida al curso de estimulación temprana ALIVOS"
-                className="w-full h-full object-cover aspect-[4/3]"
-              />
-            </div>
-            <div className="order-1 lg:order-2">
-              <h2 className="text-3xl sm:text-4xl font-bold text-alivos-dark mb-4">
-                Bienvenida a la comunidad ALIVOS
-              </h2>
-              <p className="text-slate-600 leading-relaxed mb-4">
-                Nuestro equipo de especialistas en rehabilitación pediátrica te acompaña con guías claras,
-                paso a paso, para que aprendas a estimular el desarrollo de tu bebé desde el primer día.
-              </p>
-              <p className="text-slate-600 leading-relaxed">
-                Cada curso está pensado para que puedas avanzar a tu propio ritmo, con videos, materiales
-                descargables y retroalimentación personalizada del equipo de ALIVOS Medicina de Rehabilitación.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Benefits strip */}
-      <section className="py-14 sm:py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-alivos-dark mb-3">
-              ¿Por qué elegir ALIVOS?
-            </h2>
-            <p className="text-lg text-slate-500 max-w-2xl mx-auto">
-              Una plataforma diseñada por especialistas en rehabilitación para acompañarte en cada etapa del desarrollo de tu bebé.
-            </p>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {benefits.map((benefit, i) => (
-              <div
-                key={i}
-                className="p-6 rounded-2xl bg-alivos-bg hover:bg-brand-50 border border-transparent hover:border-brand-100 transition-all group"
-              >
-                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-brand-600 mb-4 shadow-sm group-hover:shadow-md transition-shadow">
-                  {benefit.icon}
-                </div>
-                <h3 className="font-bold text-alivos-dark mb-2 text-sm">{benefit.title}</h3>
-                <p className="text-xs text-slate-500 leading-relaxed">{benefit.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Featured courses */}
-      <section className="py-14 sm:py-20 bg-alivos-bg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 gap-4">
-            <div>
-              <h2 className="text-3xl sm:text-4xl font-bold text-alivos-dark mb-2">Nuestros cursos</h2>
-              <p className="text-slate-500">Cada curso está diseñado para una etapa específica del desarrollo.</p>
-            </div>
-            <button
-              onClick={() => onNavigate("courses")}
-              className="text-brand-600 font-semibold hover:text-brand-700 flex items-center gap-1 shrink-0 text-sm"
-            >
-              Ver todos
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {loading &&
-              Array.from({ length: 4 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 animate-pulse"
-                >
-                  <div className="h-40 bg-slate-100" />
-                  <div className="p-4 space-y-2">
-                    <div className="h-4 bg-slate-100 rounded w-3/4" />
-                    <div className="h-3 bg-slate-100 rounded w-full" />
-                    <div className="h-3 bg-slate-100 rounded w-2/3" />
-                  </div>
-                </div>
-              ))}
-            {!loading && featuredCourses.map((course) => (
-              <div
-                key={course.id}
-                className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md border border-slate-100 hover:border-brand-200 transition-all group cursor-pointer"
-                onClick={() => onNavigate("courses")}
-              >
-                {/* Course image */}
-                <div className="h-40 bg-gradient-to-br from-brand-100 to-brand-200 relative overflow-hidden">
-                  {course.imageUrl && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={course.imageUrl}
-                      alt={course.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      onError={(e) => { e.currentTarget.style.display = "none"; }}
-                    />
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-                  <div className="absolute bottom-3 left-3">
-                    <span className="text-xs font-bold text-white bg-alivos-dark/70 backdrop-blur-sm px-2.5 py-1 rounded-full">
-                      {course.ageRange}
-                    </span>
-                  </div>
-                  {course.enrolled && (
-                    <div className="absolute top-3 right-3 bg-success-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                      Inscrito
-                    </div>
-                  )}
-                </div>
-                <div className="p-4">
-                  <h3 className="font-bold text-alivos-dark mb-1.5 text-sm group-hover:text-brand-700 transition-colors leading-snug">
-                    {course.title}
-                  </h3>
-                  <p className="text-xs text-slate-500 mb-3 line-clamp-2 leading-relaxed">{course.shortDescription}</p>
-                  {course.enrolled && course.progress > 0 && (
-                    <div className="mb-3">
-                      <div className="flex justify-between text-xs text-slate-400 mb-1">
-                        <span>Progreso</span>
-                        <span className="font-medium text-brand-600">{course.progress}%</span>
-                      </div>
-                      <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-brand-500 rounded-full" style={{ width: `${course.progress}%` }} />
-                      </div>
-                    </div>
-                  )}
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-50">
-                    <span className="font-bold text-alivos-dark text-sm">${course.price.toLocaleString("es-MX")}</span>
-                    <span className="text-xs text-slate-400">
-                      {course.modules.reduce((acc, m) => acc + m.lessons.length, 0)} lecciones
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* How it works */}
-      <section className="py-14 sm:py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-10 items-center mb-14">
-            <div>
-              <h2 className="text-3xl sm:text-4xl font-bold text-alivos-dark mb-3">¿Cómo funciona?</h2>
-              <p className="text-lg text-slate-500 max-w-xl">
-                Comenzar es sencillo y rápido. En minutos ya puedes ver tu primera lección desde tu celular
-                o computadora, sin instalar nada.
-              </p>
-            </div>
-            <div className="rounded-3xl overflow-hidden shadow-lg border border-slate-100">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={alivosAssets.home.platformGuide}
-                alt="Cómo usar la plataforma ALIVOS desde una tablet"
-                className="w-full h-full object-cover aspect-[4/3]"
-              />
-            </div>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {steps.map((step, i) => (
-              <div key={i} className="relative">
-                {i < steps.length - 1 && (
-                  <div className="hidden lg:block absolute top-8 left-full w-full h-px bg-brand-100 z-0" style={{ left: "calc(50% + 2rem)", width: "calc(100% - 4rem)" }} />
-                )}
-                <div className="relative z-10 text-center">
-                  <div className="w-16 h-16 bg-alivos-dark text-white rounded-2xl flex items-center justify-center text-xl font-black mx-auto mb-4 shadow-md">
-                    {step.step}
-                  </div>
-                  <h3 className="font-bold text-alivos-dark mb-2 text-sm">{step.title}</h3>
-                  <p className="text-xs text-slate-500 leading-relaxed">{step.description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="text-center mt-12">
-            <button
-              onClick={() => onNavigate("courses")}
-              className="px-8 py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl transition-colors shadow-md"
-            >
-              Empezar ahora
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Companion strip */}
-      <section className="py-14 sm:py-16 bg-alivos-bg">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 mb-10">
-          <div className="rounded-3xl overflow-hidden shadow-md border border-slate-100">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={alivosAssets.home.babiesBannerHorizontal}
-              alt="Bebés acompañados por el equipo de ALIVOS"
-              className="w-full h-auto object-cover max-h-72"
+        {/* Wave divider */}
+        <div className="absolute bottom-0 left-0 right-0 leading-none">
+          <svg viewBox="0 0 1440 60" className="w-full h-10 sm:h-14" preserveAspectRatio="none">
+            <path
+              fill="#ffffff"
+              d="M0,32 C240,64 480,0 720,16 C960,32 1200,64 1440,32 L1440,60 L0,60 Z"
             />
-          </div>
+          </svg>
         </div>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
-          <h2 className="text-2xl sm:text-3xl font-bold text-alivos-dark mb-4">
-            Diseñado para acompañarte desde casa
-          </h2>
-          <p className="text-slate-500 leading-relaxed mb-8 max-w-2xl mx-auto">
-            No necesitas equipo especial ni experiencia previa. Nuestros cursos están pensados para que
-            cualquier mamá o papá pueda aplicar las técnicas de estimulación de manera segura, efectiva y con amor.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <button
-              onClick={() => onNavigate("courses")}
-              className="px-6 py-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl transition-colors"
-            >
-              Ver los cursos disponibles
-            </button>
-            <button
-              onClick={() => onNavigate("contact")}
-              className="px-6 py-3 border-2 border-brand-200 text-brand-700 hover:bg-brand-50 font-semibold rounded-xl transition-colors"
-            >
-              Hablar con un especialista
-            </button>
+      </section>
+
+      {/* Desarrollado por el equipo de Alivos */}
+      <section className="bg-white py-14 sm:py-20">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-[320px_1fr] gap-10 items-center">
+            <div className="rounded-xl overflow-hidden order-1">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={alivosAssets.home.babiesBanner}
+                alt="Equipo de ALIVOS acompañando a familias"
+                className="w-full h-auto object-cover"
+              />
+            </div>
+            <div className="order-2">
+              <p className="text-slate-500 text-sm sm:text-base mb-1">Desarrollado por el equipo de</p>
+              <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">Alivos</h2>
+              <div className="w-12 h-0.5 bg-black mb-5" />
+              <p className="text-slate-600 leading-relaxed mb-6 max-w-[32rem]">
+                Nuestro objetivo es impulsarte a mejorar tu calidad de vida. Todo el material ha sido
+                construido con ayuda de especialistas, fisioterapeutas y tecnología médica actualizada.
+                Siempre con una visión humana, cálida y personalizada.
+              </p>
+              <button
+                onClick={() => onNavigate("contact")}
+                className="px-7 py-3 bg-success-600 hover:bg-success-700 text-white font-semibold rounded-full transition-colors"
+              >
+                Conoce más de ALIVOS
+              </button>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-alivos-dark text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid sm:grid-cols-3 gap-8 mb-8">
-            <div>
-              <div className="text-lg font-black mb-3 tracking-tight">ALIVOS</div>
-              <p className="text-sm text-blue-200/80 leading-relaxed">
-                Medicina de Rehabilitación. Cursos de estimulación temprana y rehabilitación pediátrica para familias.
+      {/* Programa de Estimulación Temprana */}
+      <section className="bg-white pt-4 pb-0">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center pb-10 sm:pb-14">
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-4">
+            Programa de Estimulación Temprana
+          </h2>
+          <div className="w-10 h-0.5 bg-black mx-auto" />
+        </div>
+      </section>
+
+      <section className="bg-alivos-light">
+        {/* Bienvenida al curso */}
+        <div className="max-w-4xl mx-auto px-0 sm:px-6 lg:px-8 pt-0 sm:pt-10">
+          <VideoOrImage
+            embedUrl={welcomeVideo?.vimeoEmbedUrl}
+            imageUrl={alivosAssets.home.welcome}
+            alt="Bienvenida al curso ALIVOS"
+            title="Bienvenida al curso"
+          />
+        </div>
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-10 text-center">
+          <h3 className="text-xl sm:text-2xl font-bold text-slate-900 mb-3">Bienvenida al curso</h3>
+          <p className="text-slate-600 leading-relaxed">
+            Los primeros meses son claves en el desarrollo de tu bebé. Aprende a estimularlo de forma
+            adecuada, con guía de especialistas y ejercicios diseñados según su etapa.
+          </p>
+        </div>
+
+        {/* ¿Cómo usar la plataforma? */}
+        <div className="max-w-5xl mx-auto px-0 sm:px-6 lg:px-8 pb-10 sm:pb-16">
+          <div className="grid lg:grid-cols-2 gap-0 lg:gap-10 items-center">
+            <VideoOrImage
+              embedUrl={null}
+              imageUrl={alivosAssets.home.platformGuide}
+              alt="Cómo usar la plataforma ALIVOS"
+              title="Cómo usar la plataforma"
+            />
+            <div className="px-4 sm:px-0 py-8 lg:py-0 text-center lg:text-left">
+              <h3 className="text-xl sm:text-2xl font-bold text-slate-900 mb-3">
+                ¿Cómo usar la plataforma?
+              </h3>
+              <p className="text-slate-600 leading-relaxed">
+                Descubre cómo utilizar cada sección de la plataforma de forma fácil y práctica.
               </p>
             </div>
-            <div>
-              <h4 className="font-semibold mb-4 text-sm">Plataforma</h4>
-              <ul className="space-y-2 text-sm text-blue-200/70">
-                <li>
-                  <button onClick={() => onNavigate("courses")} className="hover:text-white transition-colors">
-                    Cursos
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => onNavigate("dashboard")} className="hover:text-white transition-colors">
-                    Mis cursos
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => onNavigate("contact")} className="hover:text-white transition-colors">
-                    Contacto
-                  </button>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4 text-sm">Contacto</h4>
-              <ul className="space-y-2 text-sm text-blue-200/70">
-                <li>info@alivosestimulacion.com</li>
-                <li>WhatsApp disponible</li>
-                <li>alivosestimulacion.com</li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-white/10 pt-6 text-center text-sm text-blue-300/60">
-            © {new Date().getFullYear()} ALIVOS Medicina de Rehabilitación. Todos los derechos reservados.
           </div>
         </div>
-      </footer>
+      </section>
+
+      {/* Módulos disponibles */}
+      <section className="bg-white py-14 sm:py-20">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-4">Módulos disponibles</h2>
+            <div className="w-10 h-0.5 bg-black mx-auto" />
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-6">
+            {modules.map((course) => {
+              const firstLessonWithVideo = course.modules
+                .flatMap((m) => m.lessons)
+                .find((l) => l.vimeoEmbedUrl);
+              return (
+                <div key={course.id} className="flex flex-col items-center text-center">
+                  <div className="w-full rounded-xl overflow-hidden mb-5 shadow-sm">
+                    <VideoOrImage
+                      embedUrl={firstLessonWithVideo?.vimeoEmbedUrl}
+                      imageUrl={course.imageUrl ?? alivosAssets.home.coverOne}
+                      alt={course.title}
+                      title={course.title}
+                    />
+                  </div>
+                  <h3 className="font-bold text-slate-900 mb-3 leading-snug">
+                    {course.title} ({course.ageRange})
+                  </h3>
+                  <p className="text-sm text-slate-500 leading-relaxed mb-5">
+                    {course.shortDescription}
+                  </p>
+                  <button
+                    onClick={() => onNavigate("course", course.slug)}
+                    className="px-6 py-2.5 bg-success-600 hover:bg-success-700 text-white font-semibold rounded-full text-sm transition-colors"
+                  >
+                    Entrar al módulo
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="text-center mt-14 sm:mt-16">
+            <button
+              onClick={() => onNavigate("courses")}
+              className="inline-flex items-center gap-2 px-7 py-3 bg-success-600 hover:bg-success-700 text-white font-semibold rounded-full transition-colors"
+            >
+              Ver cursos
+              <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" />
+                </svg>
+              </span>
+            </button>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
