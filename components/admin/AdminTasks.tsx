@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import * as adminApi from "@/lib/api/admin";
 import { TaskStatus, TaskSubmission } from "@/lib/api/types";
+import Modal from "@/components/ui/Modal";
 
 const statusLabel: Record<TaskStatus, string> = {
   PENDING: "Pendiente",
@@ -68,20 +69,29 @@ export default function AdminTasks() {
 
       {/* Review modal */}
       {selectedTask && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white">
-              <h2 className="font-bold text-alivos-dark">Revisar tarea</h2>
+        <Modal
+          title="Revisar tarea"
+          onClose={() => { setSelectedTask(null); setAdminComment(""); }}
+          maxWidth="max-w-2xl"
+          footer={
+            <>
               <button
-                onClick={() => { setSelectedTask(null); setAdminComment(""); }}
-                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100"
+                onClick={() => review("NEEDS_CORRECTION")}
+                disabled={saving}
+                className="flex-1 py-2.5 border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-60 rounded-xl text-sm font-semibold transition-colors"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                Pedir corrección
               </button>
-            </div>
-            <div className="p-6 space-y-5">
+              <button
+                onClick={() => review("APPROVED")}
+                disabled={saving}
+                className="flex-1 py-2.5 bg-success-600 hover:bg-success-700 disabled:opacity-60 text-white rounded-xl text-sm font-semibold transition-colors"
+              >
+                Aprobar tarea
+              </button>
+            </>
+          }
+        >
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="p-3 bg-slate-50 rounded-xl">
                   <p className="text-xs font-semibold text-slate-500 mb-1">Alumno</p>
@@ -156,25 +166,7 @@ export default function AdminTasks() {
                   placeholder="Escribe tu feedback para el alumno..."
                 />
               </div>
-            </div>
-            <div className="px-6 py-4 border-t border-slate-100 flex gap-3">
-              <button
-                onClick={() => review("NEEDS_CORRECTION")}
-                disabled={saving}
-                className="flex-1 py-2.5 border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-60 rounded-xl text-sm font-semibold transition-colors"
-              >
-                Pedir corrección
-              </button>
-              <button
-                onClick={() => review("APPROVED")}
-                disabled={saving}
-                className="flex-1 py-2.5 bg-success-600 hover:bg-success-700 disabled:opacity-60 text-white rounded-xl text-sm font-semibold transition-colors"
-              >
-                Aprobar tarea
-              </button>
-            </div>
-          </div>
-        </div>
+        </Modal>
       )}
 
       {/* Tasks table */}

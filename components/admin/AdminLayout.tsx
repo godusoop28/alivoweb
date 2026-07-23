@@ -103,7 +103,7 @@ export default function AdminLayout({ currentView, onNavigate, children }: Admin
   const [logoError, setLogoError] = useState(false);
 
   return (
-    <div className="flex flex-1 bg-alivos-bg overflow-hidden min-h-0">
+    <div className="flex flex-1 bg-alivos-bg min-h-0">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
@@ -116,7 +116,7 @@ export default function AdminLayout({ currentView, onNavigate, children }: Admin
       <aside
         className={`${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } lg:translate-x-0 fixed lg:relative z-40 lg:z-auto w-64 h-full bg-alivos-dark flex flex-col transition-transform duration-200 lg:transition-none shrink-0`}
+        } lg:translate-x-0 fixed inset-y-0 lg:relative lg:inset-y-auto z-40 lg:z-auto w-64 h-screen lg:h-auto bg-alivos-dark flex flex-col transition-transform duration-200 lg:transition-none shrink-0`}
       >
         {/* Sidebar header */}
         <div className="px-4 py-4 border-b border-white/10 flex items-center justify-between">
@@ -194,7 +194,7 @@ export default function AdminLayout({ currentView, onNavigate, children }: Admin
       </aside>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
         <div className="bg-white border-b border-slate-100 px-4 sm:px-6 py-3 flex items-center gap-3 shrink-0">
           <button

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import * as adminApi from "@/lib/api/admin";
 import { Student, StudentDetail } from "@/lib/api/types";
+import Modal from "@/components/ui/Modal";
 
 export default function AdminStudents() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -67,23 +68,15 @@ export default function AdminStudents() {
 
       {/* Profile modal */}
       {(selectedStudent || detailLoading) && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-xl shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
-              <h2 className="font-bold text-alivos-dark">Perfil del alumno</h2>
-              <button
-                onClick={() => setSelectedStudent(null)}
-                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+        <Modal
+          title="Perfil del alumno"
+          onClose={() => setSelectedStudent(null)}
+          maxWidth="max-w-xl"
+        >
             {detailLoading || !selectedStudent ? (
-              <div className="p-10 text-center text-slate-400 text-sm">Cargando perfil...</div>
+              <div className="py-10 text-center text-slate-400 text-sm">Cargando perfil...</div>
             ) : (
-              <div className="p-6 space-y-5">
+              <div className="space-y-5">
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 bg-brand-100 rounded-full flex items-center justify-center text-brand-700 font-black text-xl">
                     {selectedStudent.name.charAt(0)}
@@ -198,8 +191,7 @@ export default function AdminStudents() {
                 </div>
               </div>
             )}
-          </div>
-        </div>
+        </Modal>
       )}
 
       {/* Search */}

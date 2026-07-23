@@ -5,6 +5,7 @@ import * as adminApi from "@/lib/api/admin";
 import { Course, CourseStatus } from "@/lib/api/types";
 import { ApiError } from "@/lib/api/client";
 import { alivosAssets } from "@/lib/assets/alivosAssets";
+import Modal from "@/components/ui/Modal";
 
 interface CourseFormData {
   title: string;
@@ -148,23 +149,29 @@ export default function AdminCourses() {
 
       {/* Form modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-              <h2 className="font-bold text-alivos-dark text-lg">
-                {editingId ? "Editar curso" : "Crear nuevo curso"}
-              </h2>
+        <Modal
+          title={editingId ? "Editar curso" : "Crear nuevo curso"}
+          onClose={() => setShowForm(false)}
+          maxWidth="max-w-lg"
+          footer={
+            <>
               <button
                 onClick={() => setShowForm(false)}
-                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
+                className="flex-1 py-2.5 border border-slate-200 text-slate-600 rounded-xl text-sm font-semibold hover:bg-slate-50 transition-colors"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                Cancelar
               </button>
-            </div>
-            <div className="p-6 space-y-4">
-              {error && (
+              <button
+                onClick={handleSave}
+                disabled={saving || !formData.title || !formData.ageRange}
+                className="flex-1 py-2.5 bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white rounded-xl text-sm font-semibold transition-colors"
+              >
+                {saving ? "Guardando..." : editingId ? "Guardar cambios" : "Crear curso"}
+              </button>
+            </>
+          }
+        >
+          {error && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">{error}</div>
               )}
               <div>
@@ -271,24 +278,7 @@ export default function AdminCourses() {
                   ))}
                 </div>
               </div>
-            </div>
-            <div className="px-6 py-4 border-t border-slate-100 flex gap-3">
-              <button
-                onClick={() => setShowForm(false)}
-                className="flex-1 py-2.5 border border-slate-200 text-slate-600 rounded-xl text-sm font-semibold hover:bg-slate-50 transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={saving || !formData.title || !formData.ageRange}
-                className="flex-1 py-2.5 bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white rounded-xl text-sm font-semibold transition-colors"
-              >
-                {saving ? "Guardando..." : editingId ? "Guardar cambios" : "Crear curso"}
-              </button>
-            </div>
-          </div>
-        </div>
+        </Modal>
       )}
 
       {loading ? (
