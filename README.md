@@ -1,5 +1,5 @@
 # ALIVOS Web
-
+ d
 Frontend de la plataforma de cursos de ALIVOS Medicina de Rehabilitación, construido con Next.js (App Router) y Tailwind CSS. Consume la API de `alivosApi` para cursos, autenticación, dashboard de alumno y panel de administración.
 
 ## Variable de entorno
