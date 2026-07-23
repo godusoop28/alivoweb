@@ -1,5 +1,5 @@
 import { apiFetch } from "./client";
-import { Course, StudentDashboard, VimeoResolved } from "./types";
+import { Course, StudentDashboard, VimeoResolved, VimeoUploadTicket } from "./types";
 
 export async function listCourses(token?: string | null) {
   return apiFetch<{ courses: Course[] }>("/courses", { token });
@@ -27,4 +27,11 @@ export async function submitTask(lessonId: string, input: { answer?: string; fil
 
 export async function resolveVimeoUrl(url: string) {
   return apiFetch<VimeoResolved>("/vimeo/resolve", { method: "POST", body: { url } });
+}
+
+export async function createVimeoUploadTicket(fileName: string, fileSizeBytes: number) {
+  return apiFetch<VimeoUploadTicket>("/vimeo/upload-ticket", {
+    method: "POST",
+    body: { fileName, fileSizeBytes },
+  });
 }

@@ -240,3 +240,10 @@ export interface VimeoResolved {
   duration: number | null;
   embedUrl: string | null;
 }
+
+export interface VimeoUploadTicket {
+  uploadLink: string;
+  vimeoUri: string;
+  vimeoId: string;
+  vimeoUrl: string;
+}

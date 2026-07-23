@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Upload as TusUpload } from "tus-js-client";
 import * as adminApi from "@/lib/api/admin";
-import { resolveVimeoUrl } from "@/lib/api/courses";
+import { createVimeoUploadTicket, resolveVimeoUrl } from "@/lib/api/courses";
 import { Course, Lesson, LessonType } from "@/lib/api/types";
 import { ApiError } from "@/lib/api/client";
 import { alivosAssets, getModuleAssetsByOrder } from "@/lib/assets/alivosAssets";
+import Modal from "@/components/ui/Modal";
 
 interface LessonForm {
   title: string;
@@ -62,6 +64,9 @@ export default function AdminModules() {
   const [vimeoResolving, setVimeoResolving] = useState(false);
   const [vimeoPreview, setVimeoPreview] = useState<{ thumbnailUrl: string | null; title: string | null } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const load = () => {
     setLoading(true);
@@ -154,6 +159,49 @@ export default function AdminModules() {
     }
   };
 
+  const handleUploadVideo = async (file: File) => {
+    setError(null);
+    setUploading(true);
+    setUploadProgress(0);
+    try {
+      const ticket = await createVimeoUploadTicket(file.name, file.size);
+      await new Promise<void>((resolve, reject) => {
+        const upload = new TusUpload(file, {
+          uploadUrl: ticket.uploadLink,
+          retryDelays: [0, 1000, 3000, 5000],
+          onError: reject,
+          onProgress: (bytesUploaded, bytesTotal) => {
+            setUploadProgress(Math.round((bytesUploaded / bytesTotal) * 100));
+          },
+          onSuccess: () => resolve(),
+        });
+        upload.start();
+      });
+
+      setLessonForm((prev) => ({ ...prev, vimeoUrl: ticket.vimeoUrl }));
+      setVimeoPreview({ thumbnailUrl: null, title: file.name });
+
+      // Vimeo tarda unos momentos en procesar el video, así que la miniatura
+      // real puede no estar lista todavía — este resolve es best-effort.
+      try {
+        const resolved = await resolveVimeoUrl(ticket.vimeoUrl);
+        setVimeoPreview({ thumbnailUrl: resolved.thumbnailUrl, title: resolved.title ?? file.name });
+        setLessonForm((prev) => ({
+          ...prev,
+          title: prev.title || resolved.title || prev.title,
+        }));
+      } catch {
+        // Ignorable: el video ya quedó vinculado, solo falta refrescar metadata más tarde.
+      }
+    } catch {
+      setError("No se pudo subir el video a Vimeo. Intenta de nuevo.");
+    } finally {
+      setUploading(false);
+      setUploadProgress(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   const handleSaveLesson = async () => {
     if (!activeModuleId) return;
     setSaving(true);
@@ -241,19 +289,25 @@ export default function AdminModules() {
 
       {/* Lesson form modal */}
       {showLessonForm && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
-              <h2 className="font-bold text-alivos-dark">
-                {editingLessonId ? "Editar lección" : "Agregar lección"}
-              </h2>
-              <button onClick={() => setShowLessonForm(false)} className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+        <Modal
+          title={editingLessonId ? "Editar lección" : "Agregar lección"}
+          onClose={() => setShowLessonForm(false)}
+          maxWidth="max-w-lg"
+          footer={
+            <>
+              <button onClick={() => setShowLessonForm(false)} className="flex-1 py-2.5 border border-slate-200 text-slate-600 rounded-xl text-sm font-semibold hover:bg-slate-50 transition-colors">
+                Cancelar
               </button>
-            </div>
-            <div className="p-6 space-y-4">
+              <button
+                onClick={handleSaveLesson}
+                disabled={saving || uploading || !lessonForm.title}
+                className="flex-1 py-2.5 bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white rounded-xl text-sm font-semibold transition-colors"
+              >
+                {saving ? "Guardando..." : "Guardar lección"}
+              </button>
+            </>
+          }
+        >
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Título *</label>
                 <input
@@ -289,32 +343,65 @@ export default function AdminModules() {
                 </div>
               </div>
               {lessonForm.type === "VIDEO" && (
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Link de Vimeo</label>
-                  <div className="flex gap-2">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Subir un video nuevo</label>
                     <input
-                      type="url"
-                      value={lessonForm.vimeoUrl}
-                      onChange={(e) => setLessonForm({ ...lessonForm, vimeoUrl: e.target.value })}
-                      className="flex-1 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
-                      placeholder="https://vimeo.com/..."
+                      ref={fileInputRef}
+                      type="file"
+                      accept="video/*"
+                      disabled={uploading}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleUploadVideo(file);
+                      }}
+                      className="w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-brand-50 file:text-brand-700 file:text-xs file:font-semibold hover:file:bg-brand-100 disabled:opacity-50"
                     />
-                    <button
-                      type="button"
-                      onClick={handleResolveVimeo}
-                      disabled={!lessonForm.vimeoUrl || vimeoResolving}
-                      className="px-4 py-2.5 bg-alivos-dark hover:bg-brand-900 disabled:opacity-50 text-white rounded-xl text-xs font-semibold whitespace-nowrap transition-colors"
-                    >
-                      {vimeoResolving ? "Resolviendo..." : "Obtener datos"}
-                    </button>
+                    {uploading && (
+                      <div className="mt-2">
+                        <div className="w-full bg-slate-100 rounded-full h-2">
+                          <div
+                            className="bg-brand-600 h-2 rounded-full transition-all"
+                            style={{ width: `${uploadProgress ?? 0}%` }}
+                          />
+                        </div>
+                        <p className="text-xs text-slate-500 mt-1">Subiendo a Vimeo... {uploadProgress ?? 0}%</p>
+                      </div>
+                    )}
+                    <p className="text-xs text-slate-400 mt-1">
+                      La miniatura puede tardar unos minutos en generarse; puedes editar la lección más tarde para actualizarla.
+                    </p>
                   </div>
-                  {vimeoPreview?.thumbnailUrl && (
-                    <div className="mt-3 flex items-center gap-3 p-2 bg-slate-50 rounded-xl">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={vimeoPreview.thumbnailUrl} alt="" className="w-20 h-12 object-cover rounded-lg" />
-                      <p className="text-xs text-slate-600">{vimeoPreview.title || "Metadata obtenida"}</p>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">O pegar un link de Vimeo existente</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="url"
+                        value={lessonForm.vimeoUrl}
+                        onChange={(e) => setLessonForm({ ...lessonForm, vimeoUrl: e.target.value })}
+                        className="flex-1 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
+                        placeholder="https://vimeo.com/..."
+                      />
+                      <button
+                        type="button"
+                        onClick={handleResolveVimeo}
+                        disabled={!lessonForm.vimeoUrl || vimeoResolving || uploading}
+                        className="px-4 py-2.5 bg-alivos-dark hover:bg-brand-900 disabled:opacity-50 text-white rounded-xl text-xs font-semibold whitespace-nowrap transition-colors"
+                      >
+                        {vimeoResolving ? "Resolviendo..." : "Obtener datos"}
+                      </button>
                     </div>
-                  )}
+                    {vimeoPreview && (
+                      <div className="mt-3 flex items-center gap-3 p-2 bg-slate-50 rounded-xl">
+                        {vimeoPreview.thumbnailUrl && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={vimeoPreview.thumbnailUrl} alt="" className="w-20 h-12 object-cover rounded-lg" />
+                        )}
+                        <p className="text-xs text-slate-600">{vimeoPreview.title || "Metadata obtenida"}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
               {lessonForm.type === "PDF" && (
@@ -466,21 +553,7 @@ export default function AdminModules() {
                   <span className="text-sm text-slate-700">Visible para alumnos</span>
                 </label>
               </div>
-            </div>
-            <div className="px-6 py-4 border-t border-slate-100 flex gap-3">
-              <button onClick={() => setShowLessonForm(false)} className="flex-1 py-2.5 border border-slate-200 text-slate-600 rounded-xl text-sm font-semibold hover:bg-slate-50 transition-colors">
-                Cancelar
-              </button>
-              <button
-                onClick={handleSaveLesson}
-                disabled={saving || !lessonForm.title}
-                className="flex-1 py-2.5 bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white rounded-xl text-sm font-semibold transition-colors"
-              >
-                {saving ? "Guardando..." : "Guardar lección"}
-              </button>
-            </div>
-          </div>
-        </div>
+        </Modal>
       )}
 
       {/* Add module form */}
