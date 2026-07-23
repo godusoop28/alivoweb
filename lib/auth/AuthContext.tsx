@@ -5,9 +5,6 @@ import { getMe, login as loginRequest } from "@/lib/api/auth";
 import { getToken, setToken as persistToken } from "@/lib/api/client";
 import { AuthUser } from "@/lib/api/types";
 
-export const DEMO_ADMIN_CREDENTIALS = { email: "admin@alivos.com", password: "Admin12345!" };
-export const DEMO_STUDENT_CREDENTIALS = { email: "cliente@alivos.com", password: "Cliente12345!" };
-
 interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;

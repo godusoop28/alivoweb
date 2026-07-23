@@ -8,21 +8,19 @@ import LoginModal from "@/components/auth/LoginModal";
 const LOGO_H = "/logos/logo-nav-horizontal-completo.png";
 const LOGO_ICON = "/logos/logo-icono-isotipo.png";
 
-type AppMode = "student" | "admin";
 type View =
   | "home" | "courses" | "course" | "dashboard" | "contact"
   | "admin-dashboard" | "admin-courses" | "admin-modules" | "admin-students"
   | "admin-purchases" | "admin-tasks" | "admin-access" | "admin-settings";
 
 interface NavbarProps {
-  mode: AppMode;
   currentView: View;
   onNavigate: (view: View) => void;
-  onToggleMode: () => void;
 }
 
-export default function Navbar({ mode, currentView, onNavigate, onToggleMode }: NavbarProps) {
+export default function Navbar({ currentView, onNavigate }: NavbarProps) {
   const { user, logout } = useAuth();
+  const isAdmin = user?.role === "ADMIN";
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [logoError, setLogoError] = useState(false);
@@ -37,37 +35,27 @@ export default function Navbar({ mode, currentView, onNavigate, onToggleMode }: 
   const isActive = (view: View) =>
     currentView === view || (view === "courses" && currentView === "course");
 
-  const showBigMobileHeader = mode === "student" && currentView !== "course";
+  const showBigMobileHeader = !isAdmin && currentView !== "course";
 
   return (
     <>
       {loginOpen && <LoginModal onClose={() => setLoginOpen(false)} />}
 
-      {/* Demo session bar — only visible once someone is logged in */}
+      {/* Session bar — only visible once someone is logged in */}
       {user && (
         <div className="bg-alivos-dark px-4 sm:px-6 py-1.5 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-xs min-w-0">
             <span
               className={`inline-block w-1.5 h-1.5 rounded-full shrink-0 ${
-                mode === "student" ? "bg-blue-400" : "bg-amber-400"
+                isAdmin ? "bg-amber-400" : "bg-blue-400"
               }`}
             />
             <span className="text-white/50 hidden sm:inline">Sesión:</span>
             <span className="text-white/80 font-semibold truncate">
-              {user.name} · {user.role === "ADMIN" ? "Administrador" : "Alumno"}
+              {user.name} · {isAdmin ? "Administrador" : "Alumno"}
             </span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={onToggleMode}
-              className="hidden sm:flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white/70 hover:text-white px-3 py-1 rounded-full text-xs font-medium transition-all"
-              title="Vista de demostración: alternar panel"
-            >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-              </svg>
-              <span>Ver como {mode === "student" ? "Admin" : "Alumno"} (demo)</span>
-            </button>
             <button
               onClick={logout}
               className="text-white/60 hover:text-white text-xs font-medium px-2.5 py-1 rounded-full hover:bg-white/10 transition-colors"
@@ -83,7 +71,7 @@ export default function Navbar({ mode, currentView, onNavigate, onToggleMode }: 
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="hidden md:flex items-center justify-between h-[72px]">
             <button
-              onClick={() => onNavigate(mode === "admin" ? "admin-dashboard" : "home")}
+              onClick={() => onNavigate(isAdmin ? "admin-dashboard" : "home")}
               className="flex items-center shrink-0"
               aria-label="Ir al inicio"
             >
@@ -102,7 +90,7 @@ export default function Navbar({ mode, currentView, onNavigate, onToggleMode }: 
               )}
             </button>
 
-            {mode === "student" && (
+            {!isAdmin && (
               <div className="flex items-center gap-8">
                 {publicLinks.map((link) => (
                   <button
@@ -130,14 +118,14 @@ export default function Navbar({ mode, currentView, onNavigate, onToggleMode }: 
               </div>
             )}
 
-            {mode === "admin" && (
+            {isAdmin && (
               <span className="text-xs font-bold text-alivos-dark/60 uppercase tracking-widest bg-alivos-light px-3 py-1.5 rounded-full">
                 Panel Administrador
               </span>
             )}
 
             <div className="flex items-center gap-4 shrink-0">
-              {mode === "student" && (
+              {!isAdmin && (
                 <button
                   onClick={() => onNavigate(user?.role === "STUDENT" ? "dashboard" : "home")}
                   className="relative text-slate-500 hover:text-success-700 transition-colors"
@@ -153,7 +141,7 @@ export default function Navbar({ mode, currentView, onNavigate, onToggleMode }: 
                 </button>
               )}
 
-              {mode === "student" && (
+              {!isAdmin && (
                 <button
                   onClick={() => onNavigate("contact")}
                   className="px-5 py-2 bg-success-600 hover:bg-success-700 text-white rounded-full text-sm font-semibold transition-colors"
@@ -178,7 +166,7 @@ export default function Navbar({ mode, currentView, onNavigate, onToggleMode }: 
           </div>
 
           {/* Mobile header — logo + hamburger row, then big site title/tagline */}
-          {mode === "student" ? (
+          {!isAdmin ? (
             showBigMobileHeader ? (
               <div className="md:hidden py-4">
                 <div className="flex items-center justify-between mb-3">
@@ -255,10 +243,10 @@ export default function Navbar({ mode, currentView, onNavigate, onToggleMode }: 
         </div>
 
         {/* Mobile dropdown menu (public site only) */}
-        {mode === "student" && mobileOpen && (
+        {!isAdmin && mobileOpen && (
           <div className="md:hidden border-t border-slate-100 bg-white">
             <div className="px-4 py-3 space-y-1">
-              {mode === "student" &&
+              {!isAdmin &&
                 publicLinks.map((link) => (
                   <button
                     key={link.view}
@@ -272,7 +260,7 @@ export default function Navbar({ mode, currentView, onNavigate, onToggleMode }: 
                     {link.label}
                   </button>
                 ))}
-              {mode === "student" && user?.role === "STUDENT" && (
+              {!isAdmin && user?.role === "STUDENT" && (
                 <button
                   onClick={() => { onNavigate("dashboard"); setMobileOpen(false); }}
                   className={`w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
@@ -283,7 +271,7 @@ export default function Navbar({ mode, currentView, onNavigate, onToggleMode }: 
                 </button>
               )}
               <div className="pt-2 border-t border-slate-100 space-y-2">
-                {mode === "student" && !user && (
+                {!isAdmin && !user && (
                   <button
                     onClick={() => { setLoginOpen(true); setMobileOpen(false); }}
                     className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-full text-sm font-semibold"
@@ -291,7 +279,7 @@ export default function Navbar({ mode, currentView, onNavigate, onToggleMode }: 
                     Ingresar
                   </button>
                 )}
-                {mode === "student" && user && (
+                {!isAdmin && user && (
                   <button
                     onClick={() => { logout(); setMobileOpen(false); }}
                     className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-full text-sm font-semibold"
@@ -299,7 +287,7 @@ export default function Navbar({ mode, currentView, onNavigate, onToggleMode }: 
                     Cerrar sesión ({user.name})
                   </button>
                 )}
-                {mode === "student" && (
+                {!isAdmin && (
                   <button
                     onClick={() => { onNavigate("contact"); setMobileOpen(false); }}
                     className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-success-600 text-white rounded-full text-sm font-semibold"

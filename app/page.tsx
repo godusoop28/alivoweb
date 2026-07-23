@@ -21,8 +21,6 @@ import AdminTasks from "@/components/admin/AdminTasks";
 import AdminAccess from "@/components/admin/AdminAccess";
 import AdminSettings from "@/components/admin/AdminSettings";
 
-type AppMode = "student" | "admin";
-
 type StudentView = "home" | "courses" | "course" | "dashboard" | "contact";
 type AdminView =
   | "admin-dashboard"
@@ -38,7 +36,7 @@ type CurrentView = StudentView | AdminView;
 
 export default function App() {
   const { user, loading } = useAuth();
-  const [mode, setMode] = useState<AppMode>("student");
+  const isAdmin = user?.role === "ADMIN";
   const [currentView, setCurrentView] = useState<CurrentView>("home");
   const [activeCourseId, setActiveCourseId] = useState<string>("");
 
@@ -48,41 +46,27 @@ export default function App() {
   useEffect(() => {
     if (loading) return;
     if (user?.role === "ADMIN") {
-      setMode("admin");
       setCurrentView("admin-dashboard");
     } else if (user?.role === "STUDENT") {
-      setMode("student");
       setCurrentView("dashboard");
     } else {
-      setMode("student");
       setCurrentView("home");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, loading]);
 
-  // Admin and student-only views require a session; without one, bounce to
-  // the public landing page instead of rendering an empty/broken panel.
+  // Admin views require an ADMIN session and student-only views require any
+  // session; without the right one, bounce to the public landing page
+  // instead of rendering a panel the user isn't authorized to see.
   useEffect(() => {
     if (loading) return;
     const isAdminView = currentView.startsWith("admin-");
-    const requiresAuth = isAdminView || currentView === "dashboard";
-    if (requiresAuth && !user) {
-      setMode("student");
+    if (isAdminView && !isAdmin) {
+      setCurrentView("home");
+    } else if (currentView === "dashboard" && !user) {
       setCurrentView("home");
     }
-  }, [currentView, user, loading]);
-
-  const toggleMode = () => {
-    setMode((prev) => {
-      if (prev === "student") {
-        setCurrentView("admin-dashboard");
-        return "admin";
-      } else {
-        setCurrentView("home");
-        return "student";
-      }
-    });
-  };
+  }, [currentView, user, isAdmin, loading]);
 
   const navigate = (view: CurrentView, courseId?: string) => {
     if (view === "course" && courseId) {
@@ -140,14 +124,12 @@ export default function App() {
     }
   };
 
-  if (mode === "admin") {
+  if (isAdmin) {
     return (
-      <div className="flex flex-col h-screen overflow-hidden">
+      <div className="flex flex-col min-h-screen">
         <Navbar
-          mode={mode}
           currentView={currentView}
           onNavigate={(view) => navigate(view)}
-          onToggleMode={toggleMode}
         />
         <AdminLayout
           currentView={currentView as AdminView}
@@ -162,10 +144,8 @@ export default function App() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar
-        mode={mode}
         currentView={currentView}
         onNavigate={(view) => navigate(view)}
-        onToggleMode={toggleMode}
       />
       <main className="flex-1">
         {renderStudentContent()}
