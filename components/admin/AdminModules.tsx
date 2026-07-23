@@ -256,6 +256,21 @@ export default function AdminModules() {
     }
   };
 
+  const handleMoveLesson = async (moduleId: string, lessons: Lesson[], index: number, direction: -1 | 1) => {
+    const target = lessons[index + direction];
+    const current = lessons[index];
+    if (!target) return;
+    try {
+      await Promise.all([
+        adminApi.updateLesson(current.id, { order: target.order }),
+        adminApi.updateLesson(target.id, { order: current.order }),
+      ]);
+      load();
+    } catch {
+      setError("No se pudo reordenar la lección.");
+    }
+  };
+
   if (loading) {
     return <div className="flex items-center justify-center h-64 text-slate-400 text-sm">Cargando módulos...</div>;
   }
@@ -673,6 +688,26 @@ export default function AdminModules() {
                         <span className="text-xs text-slate-400 shrink-0 hidden sm:block">{lesson.durationMinutes}min</span>
                       )}
                       <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => handleMoveLesson(module.id, module.lessons, lessonIndex, -1)}
+                          disabled={lessonIndex === 0}
+                          className="p-1 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                          title="Subir"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleMoveLesson(module.id, module.lessons, lessonIndex, 1)}
+                          disabled={lessonIndex === module.lessons.length - 1}
+                          className="p-1 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                          title="Bajar"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
                         <button
                           onClick={() => openEditLesson(module.id, lesson)}
                           className="p-1 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded transition-colors"

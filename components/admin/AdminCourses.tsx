@@ -11,6 +11,7 @@ interface CourseFormData {
   title: string;
   ageRange: string;
   shortDescription: string;
+  longDescription: string;
   price: string;
   status: CourseStatus;
   coverImage: string;
@@ -21,6 +22,7 @@ const defaultForm: CourseFormData = {
   title: "",
   ageRange: "",
   shortDescription: "",
+  longDescription: "",
   price: "",
   status: "DRAFT",
   coverImage: "",
@@ -76,6 +78,7 @@ export default function AdminCourses() {
         title: formData.title,
         ageRange: formData.ageRange,
         shortDescription: formData.shortDescription,
+        longDescription: formData.longDescription || undefined,
         price: Number(formData.price) || 0,
         status: formData.status,
         coverImage: formData.coverImage || undefined,
@@ -103,6 +106,7 @@ export default function AdminCourses() {
       title: course.title,
       ageRange: course.ageRange,
       shortDescription: course.shortDescription,
+      longDescription: course.longDescription ?? "",
       price: String(course.price),
       status: course.status,
       coverImage: course.imageUrl ?? "",
@@ -213,7 +217,17 @@ export default function AdminCourses() {
                   onChange={(e) => setFormData({ ...formData, shortDescription: e.target.value })}
                   rows={3}
                   className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300 resize-none"
-                  placeholder="Descripción breve del curso..."
+                  placeholder="Descripción breve del curso, se ve en las tarjetas del catálogo..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Descripción larga</label>
+                <textarea
+                  value={formData.longDescription}
+                  onChange={(e) => setFormData({ ...formData, longDescription: e.target.value })}
+                  rows={6}
+                  className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
+                  placeholder="Acerca de este curso: objetivos, qué incluye, etc. Los saltos de línea se respetan al mostrarla."
                 />
               </div>
               <div>
