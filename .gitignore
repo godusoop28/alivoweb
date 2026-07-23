@@ -37,6 +37,10 @@ yarn-error.log*
 # vercel
 .vercel
 
+# reference material (not part of the site)
+alivos_referencia_visual_original.pdf
+alivos_referencia_visual_pc.pdf
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
