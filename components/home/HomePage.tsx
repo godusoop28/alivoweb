@@ -21,6 +21,27 @@ function findFirstVideo(courses: Course[]): Lesson | null {
   return null;
 }
 
+function CourseRating({ rating, reviewsCount }: { rating: number | null; reviewsCount: number }) {
+  const rounded = rating ? Math.round(rating) : 0;
+  return (
+    <div className="flex items-center justify-center gap-1.5 mb-2">
+      <div className="flex items-center gap-0.5 text-amber-400">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <svg key={i} className="w-3.5 h-3.5" fill={i < rounded ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.562.562 0 00-.586 0L6.982 21.04a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"
+            />
+          </svg>
+        ))}
+      </div>
+      {reviewsCount > 0 && <span className="text-xs text-slate-400">({reviewsCount})</span>}
+    </div>
+  );
+}
+
 function VideoOrImage({
   embedUrl,
   imageUrl,
@@ -209,9 +230,10 @@ export default function HomePage({ onNavigate }: HomePageProps) {
                       title={course.title}
                     />
                   </div>
-                  <h3 className="font-bold text-slate-900 mb-3 leading-snug">
+                  <h3 className="font-bold text-slate-900 mb-2 leading-snug">
                     {course.title} ({course.ageRange})
                   </h3>
+                  <CourseRating rating={course.averageRating} reviewsCount={course.reviewsCount} />
                   <p className="text-sm text-slate-500 leading-relaxed mb-5">
                     {course.shortDescription}
                   </p>

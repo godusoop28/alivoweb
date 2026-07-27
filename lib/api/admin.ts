@@ -117,6 +117,10 @@ export async function listPurchases() {
   return apiFetch<{ purchases: Purchase[] }>("/admin/purchases");
 }
 
+export async function updatePurchaseStatus(id: string, status: "PAID" | "FAILED") {
+  return apiFetch<Purchase>(`/admin/purchases/${id}/status`, { method: "PATCH", body: { status } });
+}
+
 // ----- Tasks -----
 
 export async function listTasks() {
@@ -127,7 +131,11 @@ export async function reviewTask(
   id: string,
   input: { status: "APPROVED" | "NEEDS_CORRECTION" | "REVIEWED"; adminComment?: string }
 ) {
-  return apiFetch(`/admin/tasks/${id}/review`, { method: "PATCH", body: input });
+  return apiFetch<TaskSubmission>(`/admin/tasks/${id}/review`, { method: "PATCH", body: input });
+}
+
+export async function addAdminTaskComment(id: string, input: { text?: string; fileUrl?: string }) {
+  return apiFetch<TaskSubmission>(`/admin/tasks/${id}/comments`, { method: "POST", body: input });
 }
 
 // ----- Manual access -----

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import * as adminApi from "@/lib/api/admin";
 import { TaskStatus, TaskSubmission } from "@/lib/api/types";
 import Modal from "@/components/ui/Modal";
+import TaskCommentList from "@/components/course/TaskCommentList";
 
 const statusLabel: Record<TaskStatus, string> = {
   PENDING: "Pendiente",
@@ -25,8 +26,9 @@ export default function AdminTasks() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<TaskSubmission | null>(null);
-  const [adminComment, setAdminComment] = useState("");
+  const [comment, setComment] = useState("");
   const [saving, setSaving] = useState(false);
+  const [sendingComment, setSendingComment] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -39,13 +41,37 @@ export default function AdminTasks() {
 
   useEffect(load, []);
 
+  const applyUpdatedTask = (updated: TaskSubmission) => {
+    setSelectedTask(updated);
+    setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+  };
+
+  const handleSendComment = async () => {
+    if (!selectedTask || !comment.trim()) return;
+    setSendingComment(true);
+    setError(null);
+    try {
+      const updated = await adminApi.addAdminTaskComment(selectedTask.id, { text: comment.trim() });
+      applyUpdatedTask(updated);
+      setComment("");
+    } catch {
+      setError("No se pudo enviar el comentario.");
+    } finally {
+      setSendingComment(false);
+    }
+  };
+
   const review = async (status: "APPROVED" | "NEEDS_CORRECTION") => {
     if (!selectedTask) return;
     setSaving(true);
+    setError(null);
     try {
-      await adminApi.reviewTask(selectedTask.id, { status, adminComment });
-      setSelectedTask(null);
-      setAdminComment("");
+      const updated = await adminApi.reviewTask(selectedTask.id, {
+        status,
+        adminComment: comment.trim() || undefined,
+      });
+      applyUpdatedTask(updated);
+      setComment("");
       load();
     } catch {
       setError("No se pudo guardar la revisión.");
@@ -63,7 +89,7 @@ export default function AdminTasks() {
         </p>
       </div>
 
-      {error && (
+      {error && !selectedTask && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">{error}</div>
       )}
 
@@ -71,20 +97,23 @@ export default function AdminTasks() {
       {selectedTask && (
         <Modal
           title="Revisar tarea"
-          onClose={() => { setSelectedTask(null); setAdminComment(""); }}
+          onClose={() => {
+            setSelectedTask(null);
+            setComment("");
+          }}
           maxWidth="max-w-2xl"
           footer={
             <>
               <button
                 onClick={() => review("NEEDS_CORRECTION")}
-                disabled={saving}
+                disabled={saving || sendingComment}
                 className="flex-1 py-2.5 border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-60 rounded-xl text-sm font-semibold transition-colors"
               >
                 Pedir corrección
               </button>
               <button
                 onClick={() => review("APPROVED")}
-                disabled={saving}
+                disabled={saving || sendingComment}
                 className="flex-1 py-2.5 bg-success-600 hover:bg-success-700 disabled:opacity-60 text-white rounded-xl text-sm font-semibold transition-colors"
               >
                 Aprobar tarea
@@ -92,80 +121,71 @@ export default function AdminTasks() {
             </>
           }
         >
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="p-3 bg-slate-50 rounded-xl">
-                  <p className="text-xs font-semibold text-slate-500 mb-1">Alumno</p>
-                  <p className="font-semibold text-alivos-dark">{selectedTask.studentName}</p>
-                </div>
-                <div className="p-3 bg-slate-50 rounded-xl">
-                  <p className="text-xs font-semibold text-slate-500 mb-1">Lección</p>
-                  <p className="font-semibold text-alivos-dark">{selectedTask.lessonTitle}</p>
-                </div>
-              </div>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="p-3 bg-slate-50 rounded-xl">
+              <p className="text-xs font-semibold text-slate-500 mb-1">Alumno</p>
+              <p className="font-semibold text-alivos-dark">{selectedTask.studentName}</p>
+            </div>
+            <div className="p-3 bg-slate-50 rounded-xl">
+              <p className="text-xs font-semibold text-slate-500 mb-1">Lección</p>
+              <p className="font-semibold text-alivos-dark">{selectedTask.lessonTitle}</p>
+            </div>
+          </div>
 
-              <div>
-                <p className="text-sm font-semibold text-alivos-dark mb-2">Instrucciones de la tarea</p>
-                <div className="p-4 bg-brand-50 border border-brand-100 rounded-xl">
-                  <p className="text-sm text-slate-700">{selectedTask.taskInstructions ?? "Sin instrucciones."}</p>
-                </div>
-                {selectedTask.lessonPdfUrl && (
-                  <a
-                    href={selectedTask.lessonPdfUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-brand-600 hover:text-brand-700"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Ver guía de actividades (PDF)
-                  </a>
-                )}
-              </div>
+          <div>
+            <p className="text-sm font-semibold text-alivos-dark mb-2">Instrucciones de la tarea</p>
+            <div className="p-4 bg-brand-50 border border-brand-100 rounded-xl">
+              <p className="text-sm text-slate-700">{selectedTask.taskInstructions ?? "Sin instrucciones."}</p>
+            </div>
+            {selectedTask.lessonPdfUrl && (
+              <a
+                href={selectedTask.lessonPdfUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-brand-600 hover:text-brand-700"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Ver guía de actividades (PDF)
+              </a>
+            )}
+          </div>
 
-              {selectedTask.studentAnswer ? (
-                <div>
-                  <p className="text-sm font-semibold text-alivos-dark mb-2">Respuesta del alumno</p>
-                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
-                    <p className="text-sm text-slate-700 whitespace-pre-wrap">{selectedTask.studentAnswer}</p>
-                  </div>
-                  {selectedTask.fileUrl && (
-                    <a
-                      href={selectedTask.fileUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-3 flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
-                    >
-                      <div className="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
-                        <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                        </svg>
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-alivos-dark">Archivo adjunto</p>
-                      </div>
-                      <span className="text-xs text-brand-600 font-medium">Ver</span>
-                    </a>
-                  )}
-                </div>
-              ) : (
-                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-xl text-sm text-yellow-700">
-                  El alumno aún no ha entregado esta tarea.
-                </div>
-              )}
+          {selectedTask.comments.length > 0 ? (
+            <div>
+              <p className="text-sm font-semibold text-alivos-dark mb-2">Conversación</p>
+              <TaskCommentList comments={selectedTask.comments} viewerRole="ADMIN" />
+            </div>
+          ) : (
+            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-xl text-sm text-yellow-700">
+              El alumno aún no ha entregado esta tarea.
+            </div>
+          )}
 
-              <div>
-                <label className="block text-sm font-semibold text-alivos-dark mb-2">
-                  Comentario del administrador
-                </label>
-                <textarea
-                  rows={4}
-                  value={adminComment}
-                  onChange={(e) => setAdminComment(e.target.value)}
-                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300 resize-none"
-                  placeholder="Escribe tu feedback para el alumno..."
-                />
-              </div>
+          {error && <p className="text-sm text-red-600">{error}</p>}
+
+          <div>
+            <label className="block text-sm font-semibold text-alivos-dark mb-2">Nuevo comentario</label>
+            <textarea
+              rows={3}
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300 resize-none"
+              placeholder="Escribe tu feedback para el alumno..."
+            />
+            <button
+              type="button"
+              onClick={handleSendComment}
+              disabled={sendingComment || saving || !comment.trim()}
+              className="mt-2 px-4 py-2 bg-alivos-dark hover:bg-brand-900 disabled:opacity-50 text-white rounded-xl text-sm font-semibold transition-colors"
+            >
+              {sendingComment ? "Enviando..." : "Enviar comentario"}
+            </button>
+            <p className="text-xs text-slate-400 mt-1.5">
+              También puedes escribir aquí antes de aprobar o pedir corrección: ese comentario se agrega a la conversación.
+            </p>
+          </div>
         </Modal>
       )}
 
@@ -213,7 +233,11 @@ export default function AdminTasks() {
                     </td>
                     <td className="px-5 py-4 text-right">
                       <button
-                        onClick={() => { setSelectedTask(task); setAdminComment(task.adminComment ?? ""); }}
+                        onClick={() => {
+                          setSelectedTask(task);
+                          setComment("");
+                          setError(null);
+                        }}
                         className="text-xs font-semibold text-brand-600 hover:text-brand-700 hover:bg-brand-50 px-3 py-1.5 rounded-lg transition-colors"
                       >
                         Revisar

@@ -8,14 +8,30 @@ export default function AdminPurchases() {
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  useEffect(() => {
+  const load = () => {
     adminApi
       .listPurchases()
       .then(({ purchases }) => setPurchases(purchases))
       .catch(() => setError("No se pudieron cargar las compras."))
       .finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(load, []);
+
+  const handleStatus = async (id: string, status: "PAID" | "FAILED") => {
+    setUpdatingId(id);
+    setError(null);
+    try {
+      const updated = await adminApi.updatePurchaseStatus(id, status);
+      setPurchases((prev) => prev.map((p) => (p.id === id ? updated : p)));
+    } catch {
+      setError("No se pudo actualizar la compra.");
+    } finally {
+      setUpdatingId(null);
+    }
+  };
 
   const totalPaid = purchases.filter((p) => p.status === "PAID").reduce((acc, p) => acc + p.amount, 0);
 
@@ -80,6 +96,7 @@ export default function AdminPurchases() {
                   <th className="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider hidden md:table-cell">Fecha</th>
                   <th className="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Monto</th>
                   <th className="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Estado</th>
+                  <th className="text-right px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -114,11 +131,33 @@ export default function AdminPurchases() {
                         {purchase.status === "PAID" ? "Pagado" : purchase.status === "PENDING" ? "Pendiente" : "Fallido"}
                       </span>
                     </td>
+                    <td className="px-5 py-4 text-right">
+                      {purchase.status === "PENDING" ? (
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleStatus(purchase.id, "FAILED")}
+                            disabled={updatingId === purchase.id}
+                            className="text-xs font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                          >
+                            Rechazar
+                          </button>
+                          <button
+                            onClick={() => handleStatus(purchase.id, "PAID")}
+                            disabled={updatingId === purchase.id}
+                            className="text-xs font-semibold text-white bg-success-600 hover:bg-success-700 px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                          >
+                            {updatingId === purchase.id ? "..." : "Confirmar pago"}
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-slate-300">—</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
                 {purchases.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-5 py-10 text-center text-slate-400 text-sm">
+                    <td colSpan={7} className="px-5 py-10 text-center text-slate-400 text-sm">
                       Todavía no hay compras registradas.
                     </td>
                   </tr>

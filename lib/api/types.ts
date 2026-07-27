@@ -38,6 +38,7 @@ export interface Lesson {
   pdfUrl: string | null;
   assetType: string | null;
   completed: boolean;
+  locked: boolean;
 }
 
 export interface Module {
@@ -48,6 +49,14 @@ export interface Module {
   coverImage: string | null;
   bannerImage: string | null;
   lessons: Lesson[];
+}
+
+export interface CourseReview {
+  id: string;
+  studentName: string;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
 }
 
 export interface Course {
@@ -64,6 +73,12 @@ export interface Course {
   studentsCount: number;
   enrolled: boolean;
   progress: number;
+  hasAccess: boolean;
+  averageRating: number | null;
+  reviewsCount: number;
+  reviews: CourseReview[];
+  myReview: CourseReview | null;
+  canReview: boolean;
   modules: Module[];
 }
 
@@ -195,6 +210,15 @@ export interface Purchase {
   createdAt: string;
 }
 
+export interface TaskComment {
+  id: string;
+  authorName: string;
+  authorRole: Role;
+  text: string | null;
+  fileUrl: string | null;
+  createdAt: string;
+}
+
 export interface TaskSubmission {
   id: string;
   studentName: string;
@@ -202,13 +226,21 @@ export interface TaskSubmission {
   lessonTitle: string;
   courseTitle: string;
   taskInstructions: string | null;
-  studentAnswer: string | null;
-  fileUrl: string | null;
   lessonPdfUrl: string | null;
   lessonImageUrl: string | null;
   status: TaskStatus;
-  adminComment: string | null;
+  comments: TaskComment[];
   deliveredAt: string;
+  reviewedAt: string | null;
+}
+
+export interface MyTask {
+  taskInstructions: string | null;
+  lessonPdfUrl: string | null;
+  lessonImageUrl: string | null;
+  status: TaskStatus | null;
+  comments: TaskComment[];
+  deliveredAt: string | null;
   reviewedAt: string | null;
 }
 

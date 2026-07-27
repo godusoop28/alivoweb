@@ -33,6 +33,12 @@ export function getFallbackCourses(): Course[] {
     studentsCount: c.studentsCount,
     enrolled: c.enrolled,
     progress: c.progress,
+    hasAccess: c.enrolled,
+    averageRating: null,
+    reviewsCount: 0,
+    reviews: [],
+    myReview: null,
+    canReview: false,
     modules: c.modules.map((m, i) => ({
       id: m.id,
       title: m.title,
@@ -60,6 +66,7 @@ export function getFallbackCourses(): Course[] {
         pdfUrl: l.pdfUrl ?? null,
         assetType: l.assetType ?? null,
         completed: l.completed,
+        locked: !c.enrolled,
       })),
     })),
   }));
