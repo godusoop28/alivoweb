@@ -6,6 +6,7 @@ import { Course, CourseStatus } from "@/lib/api/types";
 import { ApiError } from "@/lib/api/client";
 import { alivosAssets } from "@/lib/assets/alivosAssets";
 import Modal from "@/components/ui/Modal";
+import FileUploadField from "@/components/ui/FileUploadField";
 
 interface CourseFormData {
   title: string;
@@ -243,15 +244,14 @@ export default function AdminCourses() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Imagen principal / portada</label>
-                <input
-                  type="text"
+                <FileUploadField
+                  label="Imagen principal / portada"
                   value={formData.coverImage}
-                  onChange={(e) => setFormData({ ...formData, coverImage: e.target.value })}
-                  className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300 mb-2"
-                  placeholder="/alivos-assets/..."
+                  onChange={(url) => setFormData({ ...formData, coverImage: url })}
+                  accept="image/*"
+                  preview="image"
                 />
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-1.5 mt-2">
                   {coverExamples.map((ex) => (
                     <button
                       key={ex.url}
@@ -263,23 +263,16 @@ export default function AdminCourses() {
                     </button>
                   ))}
                 </div>
-                {formData.coverImage && (
-                  <div className="mt-2 rounded-xl overflow-hidden border border-slate-100">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={formData.coverImage} alt="" className="w-full h-28 object-cover" />
-                  </div>
-                )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Banner del curso</label>
-                <input
-                  type="text"
+                <FileUploadField
+                  label="Banner del curso"
                   value={formData.bannerImage}
-                  onChange={(e) => setFormData({ ...formData, bannerImage: e.target.value })}
-                  className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300 mb-2"
-                  placeholder="/alivos-assets/..."
+                  onChange={(url) => setFormData({ ...formData, bannerImage: url })}
+                  accept="image/*"
+                  preview="image"
                 />
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-1.5 mt-2">
                   {bannerExamples.map((ex) => (
                     <button
                       key={ex.url}

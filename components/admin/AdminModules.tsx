@@ -8,6 +8,7 @@ import { Course, Lesson, LessonType } from "@/lib/api/types";
 import { ApiError } from "@/lib/api/client";
 import { alivosAssets, getModuleAssetsByOrder } from "@/lib/assets/alivosAssets";
 import Modal from "@/components/ui/Modal";
+import FileUploadField from "@/components/ui/FileUploadField";
 
 interface LessonForm {
   title: string;
@@ -61,7 +62,6 @@ export default function AdminModules() {
   const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
   const [lessonForm, setLessonForm] = useState<LessonForm>(defaultLessonForm);
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
-  const [vimeoResolving, setVimeoResolving] = useState(false);
   const [vimeoPreview, setVimeoPreview] = useState<{ thumbnailUrl: string | null; title: string | null } | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -138,24 +138,6 @@ export default function AdminModules() {
       load();
     } catch {
       setError("No se pudo crear el módulo.");
-    }
-  };
-
-  const handleResolveVimeo = async () => {
-    if (!lessonForm.vimeoUrl) return;
-    setVimeoResolving(true);
-    try {
-      const resolved = await resolveVimeoUrl(lessonForm.vimeoUrl);
-      setVimeoPreview({ thumbnailUrl: resolved.thumbnailUrl, title: resolved.title });
-      setLessonForm((prev) => ({
-        ...prev,
-        duration: resolved.duration ? String(resolved.duration) : prev.duration,
-        title: prev.title || resolved.title || prev.title,
-      }));
-    } catch {
-      setError("No se pudo resolver el video de Vimeo. Verifica el enlace.");
-    } finally {
-      setVimeoResolving(false);
     }
   };
 
@@ -388,48 +370,25 @@ export default function AdminModules() {
                     </p>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">O pegar un link de Vimeo existente</label>
-                    <div className="flex gap-2">
-                      <input
-                        type="url"
-                        value={lessonForm.vimeoUrl}
-                        onChange={(e) => setLessonForm({ ...lessonForm, vimeoUrl: e.target.value })}
-                        className="flex-1 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
-                        placeholder="https://vimeo.com/..."
-                      />
-                      <button
-                        type="button"
-                        onClick={handleResolveVimeo}
-                        disabled={!lessonForm.vimeoUrl || vimeoResolving || uploading}
-                        className="px-4 py-2.5 bg-alivos-dark hover:bg-brand-900 disabled:opacity-50 text-white rounded-xl text-xs font-semibold whitespace-nowrap transition-colors"
-                      >
-                        {vimeoResolving ? "Resolviendo..." : "Obtener datos"}
-                      </button>
+                  {vimeoPreview && (
+                    <div className="flex items-center gap-3 p-2 bg-slate-50 rounded-xl">
+                      {vimeoPreview.thumbnailUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={vimeoPreview.thumbnailUrl} alt="" className="w-20 h-12 object-cover rounded-lg" />
+                      )}
+                      <p className="text-xs text-slate-600">{vimeoPreview.title || "Video vinculado"}</p>
                     </div>
-                    {vimeoPreview && (
-                      <div className="mt-3 flex items-center gap-3 p-2 bg-slate-50 rounded-xl">
-                        {vimeoPreview.thumbnailUrl && (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={vimeoPreview.thumbnailUrl} alt="" className="w-20 h-12 object-cover rounded-lg" />
-                        )}
-                        <p className="text-xs text-slate-600">{vimeoPreview.title || "Metadata obtenida"}</p>
-                      </div>
-                    )}
-                  </div>
+                  )}
                 </div>
               )}
               {lessonForm.type === "PDF" && (
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">URL del material (PDF)</label>
-                  <input
-                    type="url"
-                    value={lessonForm.materialUrl}
-                    onChange={(e) => setLessonForm({ ...lessonForm, materialUrl: e.target.value, hasMaterial: true })}
-                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
-                    placeholder="https://..."
-                  />
-                </div>
+                <FileUploadField
+                  label="Material (PDF)"
+                  value={lessonForm.materialUrl}
+                  onChange={(url) => setLessonForm({ ...lessonForm, materialUrl: url, hasMaterial: true })}
+                  accept="application/pdf"
+                  preview="pdf"
+                />
               )}
 
               {/* Real ALIVOS assets — quick pick for "Descubriendo su cuerpo" */}
@@ -477,46 +436,21 @@ export default function AdminModules() {
                 )}
 
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Imagen ilustrativa (URL)</label>
-                  <input
-                    type="text"
-                    value={lessonForm.imageUrl}
-                    onChange={(e) => setLessonForm({ ...lessonForm, imageUrl: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
-                    placeholder="/alivos-assets/..."
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">PDF asociado (URL)</label>
-                  <input
-                    type="text"
-                    value={lessonForm.pdfUrl}
-                    onChange={(e) => setLessonForm({ ...lessonForm, pdfUrl: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
-                    placeholder="/alivos-assets/....pdf"
-                  />
-                </div>
+                <FileUploadField
+                  label="Imagen ilustrativa"
+                  value={lessonForm.imageUrl}
+                  onChange={(url) => setLessonForm({ ...lessonForm, imageUrl: url })}
+                  accept="image/*"
+                  preview="image"
+                />
+                <FileUploadField
+                  label="PDF asociado"
+                  value={lessonForm.pdfUrl}
+                  onChange={(url) => setLessonForm({ ...lessonForm, pdfUrl: url })}
+                  accept="application/pdf"
+                  preview="pdf"
+                />
               </div>
-              {lessonForm.imageUrl && (
-                <div className="rounded-xl overflow-hidden border border-slate-100">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={lessonForm.imageUrl} alt="" className="w-full h-32 object-cover" />
-                </div>
-              )}
-              {lessonForm.pdfUrl && (
-                <a
-                  href={lessonForm.pdfUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-600 hover:text-brand-700"
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Ver PDF asociado
-                </a>
-              )}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Descripción</label>
                 <textarea
