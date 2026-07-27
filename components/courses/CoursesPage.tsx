@@ -1,12 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import { listCourses } from "@/lib/api/courses";
 import { getFallbackCourses } from "@/lib/api/mockFallback";
 import { Course } from "@/lib/api/types";
-
-const LOGO_ICON = "/logos/logo-inicio-vertical-completo.png";
 
 interface CoursesPageProps {
   onOpenCourse: (courseId: string) => void;
@@ -100,7 +97,7 @@ export default function CoursesPage({ onOpenCourse }: CoursesPageProps) {
                 key={course.id}
                 className="w-full max-w-sm border border-slate-200 rounded-lg overflow-hidden flex flex-col"
               >
-                {/* Cover image with ALIVOS logo overlay + bookmark */}
+                {/* Cover image with bookmark */}
                 <div className="relative aspect-[4/3] bg-alivos-light overflow-hidden">
                   {course.imageUrl && (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -112,9 +109,6 @@ export default function CoursesPage({ onOpenCourse }: CoursesPageProps) {
                     />
                   )}
                   <div className="absolute inset-0 bg-white/25" />
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2">
-                    <Image src={LOGO_ICON} alt="ALIVOS" width={110} height={110} className="w-24 sm:w-28 h-auto object-contain drop-shadow" />
-                  </div>
                   <button
                     onClick={() => setBookmarked((prev) => ({ ...prev, [course.id]: !prev[course.id] }))}
                     aria-label="Guardar curso"
