@@ -4,11 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { Upload as TusUpload } from "tus-js-client";
 import * as adminApi from "@/lib/api/admin";
 import { createVimeoUploadTicket, resolveVimeoUrl } from "@/lib/api/courses";
-import { Course, Lesson, LessonType } from "@/lib/api/types";
+import { Course, FormField, Lesson, LessonType } from "@/lib/api/types";
 import { ApiError } from "@/lib/api/client";
 import { alivosAssets, getModuleAssetsByOrder } from "@/lib/assets/alivosAssets";
 import Modal from "@/components/ui/Modal";
 import FileUploadField from "@/components/ui/FileUploadField";
+import FormBuilder from "@/components/admin/FormBuilder";
+import FormResponsesModal from "@/components/admin/FormResponsesModal";
 
 interface LessonForm {
   title: string;
@@ -23,6 +25,7 @@ interface LessonForm {
   imageUrl: string;
   pdfUrl: string;
   assetType: string;
+  formFields: FormField[];
   visible: boolean;
 }
 
@@ -39,6 +42,7 @@ const defaultLessonForm: LessonForm = {
   imageUrl: "",
   pdfUrl: "",
   assetType: "",
+  formFields: [],
   visible: true,
 };
 
@@ -48,7 +52,18 @@ const typeOptions: { value: LessonType; label: string }[] = [
   { value: "PDF", label: "PDF" },
   { value: "TASK", label: "Tarea" },
   { value: "EVALUATION", label: "Evaluación" },
+  { value: "FORM", label: "Formulario" },
 ];
+
+function parseFormSchema(raw: string | null): FormField[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
 
 export default function AdminModules() {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -62,10 +77,13 @@ export default function AdminModules() {
   const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
   const [lessonForm, setLessonForm] = useState<LessonForm>(defaultLessonForm);
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
+  const [draggedLessonId, setDraggedLessonId] = useState<string | null>(null);
+  const [dragOverLessonId, setDragOverLessonId] = useState<string | null>(null);
   const [vimeoPreview, setVimeoPreview] = useState<{ thumbnailUrl: string | null; title: string | null } | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [viewingResponsesLesson, setViewingResponsesLesson] = useState<Lesson | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const load = () => {
@@ -121,6 +139,7 @@ export default function AdminModules() {
       imageUrl: lesson.imageUrl ?? "",
       pdfUrl: lesson.pdfUrl ?? "",
       assetType: lesson.assetType ?? "",
+      formFields: parseFormSchema(lesson.formSchema),
       visible: lesson.visible,
     });
     setVimeoPreview(
@@ -202,6 +221,15 @@ export default function AdminModules() {
         imageUrl: lessonForm.imageUrl || undefined,
         pdfUrl: lessonForm.pdfUrl || undefined,
         assetType: lessonForm.assetType || undefined,
+        formSchema:
+          lessonForm.type === "FORM"
+            ? JSON.stringify(
+                lessonForm.formFields.map((field) => ({
+                  ...field,
+                  options: field.options.map((o) => o.trim()).filter(Boolean),
+                }))
+              )
+            : undefined,
         visible: lessonForm.visible,
       };
       if (editingLessonId) {
@@ -247,6 +275,23 @@ export default function AdminModules() {
         adminApi.updateLesson(current.id, { order: target.order }),
         adminApi.updateLesson(target.id, { order: current.order }),
       ]);
+      load();
+    } catch {
+      setError("No se pudo reordenar la lección.");
+    }
+  };
+
+  const handleReorderLessons = async (lessons: Lesson[], fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return;
+    const reordered = [...lessons];
+    const [moved] = reordered.splice(fromIndex, 1);
+    reordered.splice(toIndex, 0, moved);
+    const changed = reordered
+      .map((lesson, index) => ({ lesson, index }))
+      .filter(({ lesson, index }) => lesson.order !== index);
+    if (changed.length === 0) return;
+    try {
+      await Promise.all(changed.map(({ lesson, index }) => adminApi.updateLesson(lesson.id, { order: index })));
       load();
     } catch {
       setError("No se pudo reordenar la lección.");
@@ -390,6 +435,15 @@ export default function AdminModules() {
                   preview="pdf"
                 />
               )}
+              {lessonForm.type === "FORM" && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Preguntas del formulario</label>
+                  <FormBuilder
+                    fields={lessonForm.formFields}
+                    onChange={(fields) => setLessonForm({ ...lessonForm, formFields: fields })}
+                  />
+                </div>
+              )}
 
               {/* Real ALIVOS assets — quick pick for "Descubriendo su cuerpo" */}
               {selectedCourse?.slug === alivosAssets.courseDescubriendoSuCuerpo.slug &&
@@ -505,6 +559,15 @@ export default function AdminModules() {
         </Modal>
       )}
 
+      {viewingResponsesLesson && (
+        <FormResponsesModal
+          lessonId={viewingResponsesLesson.id}
+          lessonTitle={viewingResponsesLesson.title}
+          fields={parseFormSchema(viewingResponsesLesson.formSchema)}
+          onClose={() => setViewingResponsesLesson(null)}
+        />
+      )}
+
       {/* Add module form */}
       {showAddModule && (
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-brand-200">
@@ -593,7 +656,35 @@ export default function AdminModules() {
               {expandedModules.has(module.id) && (
                 <div className="divide-y divide-slate-50">
                   {module.lessons.map((lesson, lessonIndex) => (
-                    <div key={lesson.id} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50 transition-colors">
+                    <div
+                      key={lesson.id}
+                      draggable
+                      onDragStart={() => setDraggedLessonId(lesson.id)}
+                      onDragEnd={() => {
+                        setDraggedLessonId(null);
+                        setDragOverLessonId(null);
+                      }}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        if (draggedLessonId && draggedLessonId !== lesson.id) setDragOverLessonId(lesson.id);
+                      }}
+                      onDragLeave={() => setDragOverLessonId((prev) => (prev === lesson.id ? null : prev))}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        setDragOverLessonId(null);
+                        if (!draggedLessonId) return;
+                        const fromIndex = module.lessons.findIndex((l) => l.id === draggedLessonId);
+                        if (fromIndex === -1) return;
+                        handleReorderLessons(module.lessons, fromIndex, lessonIndex);
+                        setDraggedLessonId(null);
+                      }}
+                      className={`flex items-center gap-3 px-5 py-3 hover:bg-slate-50 transition-colors cursor-grab active:cursor-grabbing ${
+                        draggedLessonId === lesson.id ? "opacity-40" : ""
+                      } ${dragOverLessonId === lesson.id ? "bg-brand-50 border-t-2 border-brand-400" : ""}`}
+                    >
+                      <svg className="w-4 h-4 text-slate-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 6h.01M8 12h.01M8 18h.01M16 6h.01M16 12h.01M16 18h.01" />
+                      </svg>
                       <div className="text-xs text-slate-400 w-5 text-center">{lessonIndex + 1}</div>
                       <div className="flex items-center gap-2 flex-1 min-w-0">
                         <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${
@@ -642,6 +733,17 @@ export default function AdminModules() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                           </svg>
                         </button>
+                        {lesson.type === "FORM" && (
+                          <button
+                            onClick={() => setViewingResponsesLesson(lesson)}
+                            className="p-1 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded transition-colors"
+                            title="Ver respuestas"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h3m-9 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                          </button>
+                        )}
                         <button
                           onClick={() => openEditLesson(module.id, lesson)}
                           className="p-1 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded transition-colors"

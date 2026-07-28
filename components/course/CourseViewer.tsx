@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 import { completeLesson, getCourse } from "@/lib/api/courses";
 import { getFallbackCourses } from "@/lib/api/mockFallback";
-import { Course, Lesson, Module } from "@/lib/api/types";
+import { Course, FormField, Lesson, Module } from "@/lib/api/types";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { ApiError } from "@/lib/api/client";
 import TaskThread from "@/components/course/TaskThread";
 import PurchaseGate from "@/components/course/PurchaseGate";
 import CourseReviewForm from "@/components/course/CourseReviewForm";
+import FormRenderer from "@/components/course/FormRenderer";
+import AdvisoryModal from "@/components/advisory/AdvisoryModal";
 
 interface CourseViewerProps {
   courseId: string;
@@ -21,6 +23,7 @@ const typeLabel: Record<Lesson["type"], string> = {
   PDF: "PDF",
   TASK: "Tarea",
   EVALUATION: "Evaluación",
+  FORM: "Formulario",
 };
 
 const typeIcon = (type: Lesson["type"]) => {
@@ -50,6 +53,12 @@ const typeIcon = (type: Lesson["type"]) => {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
         </svg>
       );
+    case "FORM":
+      return (
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17h6m-6-4h6m-6-4h6M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z" />
+        </svg>
+      );
     default:
       return (
         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -58,6 +67,16 @@ const typeIcon = (type: Lesson["type"]) => {
       );
   }
 };
+
+function parseFormSchema(raw: string | null): FormField[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
 
 export default function CourseViewer({ courseId, onBack }: CourseViewerProps) {
   const { user } = useAuth();
@@ -68,6 +87,7 @@ export default function CourseViewer({ courseId, onBack }: CourseViewerProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [completedOverrides, setCompletedOverrides] = useState<Record<string, boolean>>({});
   const [showAbout, setShowAbout] = useState(false);
+  const [showAdvisory, setShowAdvisory] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -316,6 +336,22 @@ export default function CourseViewer({ courseId, onBack }: CourseViewerProps) {
               </div>
             ))}
           </div>
+          <div className="px-4 py-3 border-t border-slate-100 shrink-0">
+            <button
+              onClick={() => setShowAdvisory(true)}
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-alivos-dark hover:bg-brand-900 text-white text-xs font-semibold rounded-xl transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+              Solicitar asesoramiento en línea
+            </button>
+          </div>
         </aside>
 
         {/* Main content */}
@@ -450,6 +486,17 @@ export default function CourseViewer({ courseId, onBack }: CourseViewerProps) {
                 </div>
               )}
 
+              {/* Form */}
+              {!currentLesson.locked && currentLesson.type === "FORM" && (
+                user ? (
+                  <FormRenderer lessonId={currentLesson.id} fields={parseFormSchema(currentLesson.formSchema)} />
+                ) : (
+                  <div className="bg-white rounded-2xl p-5 mb-4 shadow-sm text-center">
+                    <p className="text-sm text-slate-600">Inicia sesión para responder este formulario.</p>
+                  </div>
+                )
+              )}
+
               {/* Lesson header */}
               <div className="bg-white rounded-2xl p-6 mb-4 shadow-sm">
                 <div className="flex items-start justify-between gap-4 mb-3">
@@ -526,13 +573,17 @@ export default function CourseViewer({ courseId, onBack }: CourseViewerProps) {
                 </div>
               )}
 
-              {/* Task */}
-              {!currentLesson.locked && currentLesson.hasTask && (
+              {/* Task / lesson comments */}
+              {!currentLesson.locked && (
                 user ? (
-                  <TaskThread lessonId={currentLesson.id} taskDescription={currentLesson.taskDescription} />
+                  <TaskThread lessonId={currentLesson.id} />
                 ) : (
                   <div className="bg-white rounded-2xl p-5 mb-4 shadow-sm border-l-4 border-brand-400 text-center">
-                    <p className="text-sm text-slate-600">Inicia sesión para entregar esta tarea.</p>
+                    <p className="text-sm text-slate-600">
+                      {currentLesson.hasTask
+                        ? "Inicia sesión para entregar esta tarea."
+                        : "Inicia sesión para dejar un comentario."}
+                    </p>
                   </div>
                 )
               )}
@@ -582,6 +633,7 @@ export default function CourseViewer({ courseId, onBack }: CourseViewerProps) {
           )}
         </main>
       </div>
+      {showAdvisory && <AdvisoryModal onClose={() => setShowAdvisory(false)} />}
     </div>
   );
 }

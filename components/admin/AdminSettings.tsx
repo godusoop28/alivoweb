@@ -12,7 +12,22 @@ const emptySettings: Settings = {
   facebook: "",
   website: "",
   brandName: "",
+  advisoryEnabled: true,
+  advisorySlotMinutes: 30,
+  advisoryDays: "1,2,3,4,5",
+  advisoryStartTime: "09:00",
+  advisoryEndTime: "18:00",
 };
+
+const dayOptions = [
+  { value: 1, label: "Lun" },
+  { value: 2, label: "Mar" },
+  { value: 3, label: "Mié" },
+  { value: 4, label: "Jue" },
+  { value: 5, label: "Vie" },
+  { value: 6, label: "Sáb" },
+  { value: 7, label: "Dom" },
+];
 
 export default function AdminSettings() {
   const [settings, setSettings] = useState<Settings>(emptySettings);
@@ -46,6 +61,17 @@ export default function AdminSettings() {
   if (loading) {
     return <div className="flex items-center justify-center h-64 text-slate-400 text-sm">Cargando configuración...</div>;
   }
+
+  const selectedDays = new Set(
+    (settings.advisoryDays ?? "").split(",").map((d) => d.trim()).filter(Boolean).map(Number)
+  );
+
+  const toggleDay = (day: number) => {
+    const next = new Set(selectedDays);
+    if (next.has(day)) next.delete(day);
+    else next.add(day);
+    setSettings({ ...settings, advisoryDays: Array.from(next).sort().join(",") });
+  };
 
   return (
     <div className="space-y-6 animate-fade-in max-w-3xl">
@@ -164,6 +190,82 @@ export default function AdminSettings() {
             onChange={(e) => setSettings({ ...settings, brandName: e.target.value })}
             className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
           />
+        </div>
+      </div>
+
+      {/* Advisory availability */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="font-bold text-alivos-dark flex items-center gap-2">
+            <svg className="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
+            </svg>
+            Disponibilidad para citas de asesoramiento
+          </h2>
+          <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={settings.advisoryEnabled ?? true}
+              onChange={(e) => setSettings({ ...settings, advisoryEnabled: e.target.checked })}
+              className="w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-300"
+            />
+            Activo
+          </label>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1.5">Días disponibles</label>
+          <div className="flex flex-wrap gap-2">
+            {dayOptions.map((day) => (
+              <button
+                key={day.value}
+                type="button"
+                onClick={() => toggleDay(day.value)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                  selectedDays.has(day.value)
+                    ? "bg-brand-600 border-brand-600 text-white"
+                    : "border-slate-200 text-slate-500 hover:border-brand-300"
+                }`}
+              >
+                {day.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="grid sm:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">Hora de inicio</label>
+            <input
+              type="time"
+              value={settings.advisoryStartTime ?? "09:00"}
+              onChange={(e) => setSettings({ ...settings, advisoryStartTime: e.target.value })}
+              className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">Hora de fin</label>
+            <input
+              type="time"
+              value={settings.advisoryEndTime ?? "18:00"}
+              onChange={(e) => setSettings({ ...settings, advisoryEndTime: e.target.value })}
+              className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">Duración de cada cita (min)</label>
+            <input
+              type="number"
+              min={5}
+              step={5}
+              value={settings.advisorySlotMinutes ?? 30}
+              onChange={(e) => setSettings({ ...settings, advisorySlotMinutes: Number(e.target.value) })}
+              className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
+            />
+          </div>
         </div>
       </div>
 

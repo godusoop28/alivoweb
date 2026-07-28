@@ -83,9 +83,9 @@ export default function AdminTasks() {
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold text-alivos-dark">Tareas de alumnos</h1>
+        <h1 className="text-2xl font-bold text-alivos-dark">Tareas y comentarios</h1>
         <p className="text-slate-500 text-sm mt-1">
-          {tasks.filter((t) => t.status === "DELIVERED").length} tareas para revisar
+          {tasks.filter((t) => t.status === "DELIVERED").length} pendientes por revisar
         </p>
       </div>
 
@@ -96,29 +96,41 @@ export default function AdminTasks() {
       {/* Review modal */}
       {selectedTask && (
         <Modal
-          title="Revisar tarea"
+          title={selectedTask.lessonHasTask ? "Revisar tarea" : "Comentarios de la lección"}
           onClose={() => {
             setSelectedTask(null);
             setComment("");
           }}
           maxWidth="max-w-2xl"
           footer={
-            <>
+            selectedTask.lessonHasTask ? (
+              <>
+                <button
+                  onClick={() => review("NEEDS_CORRECTION")}
+                  disabled={saving || sendingComment}
+                  className="flex-1 py-2.5 border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-60 rounded-xl text-sm font-semibold transition-colors"
+                >
+                  Pedir corrección
+                </button>
+                <button
+                  onClick={() => review("APPROVED")}
+                  disabled={saving || sendingComment}
+                  className="flex-1 py-2.5 bg-success-600 hover:bg-success-700 disabled:opacity-60 text-white rounded-xl text-sm font-semibold transition-colors"
+                >
+                  Aprobar tarea
+                </button>
+              </>
+            ) : (
               <button
-                onClick={() => review("NEEDS_CORRECTION")}
-                disabled={saving || sendingComment}
-                className="flex-1 py-2.5 border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-60 rounded-xl text-sm font-semibold transition-colors"
+                onClick={() => {
+                  setSelectedTask(null);
+                  setComment("");
+                }}
+                className="flex-1 py-2.5 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl text-sm font-semibold transition-colors"
               >
-                Pedir corrección
+                Cerrar
               </button>
-              <button
-                onClick={() => review("APPROVED")}
-                disabled={saving || sendingComment}
-                className="flex-1 py-2.5 bg-success-600 hover:bg-success-700 disabled:opacity-60 text-white rounded-xl text-sm font-semibold transition-colors"
-              >
-                Aprobar tarea
-              </button>
-            </>
+            )
           }
         >
           <div className="grid sm:grid-cols-2 gap-4">
@@ -132,25 +144,27 @@ export default function AdminTasks() {
             </div>
           </div>
 
-          <div>
-            <p className="text-sm font-semibold text-alivos-dark mb-2">Instrucciones de la tarea</p>
-            <div className="p-4 bg-brand-50 border border-brand-100 rounded-xl">
-              <p className="text-sm text-slate-700">{selectedTask.taskInstructions ?? "Sin instrucciones."}</p>
+          {selectedTask.lessonHasTask && (
+            <div>
+              <p className="text-sm font-semibold text-alivos-dark mb-2">Instrucciones de la tarea</p>
+              <div className="p-4 bg-brand-50 border border-brand-100 rounded-xl">
+                <p className="text-sm text-slate-700">{selectedTask.taskInstructions ?? "Sin instrucciones."}</p>
+              </div>
+              {selectedTask.lessonPdfUrl && (
+                <a
+                  href={selectedTask.lessonPdfUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-brand-600 hover:text-brand-700"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Ver guía de actividades (PDF)
+                </a>
+              )}
             </div>
-            {selectedTask.lessonPdfUrl && (
-              <a
-                href={selectedTask.lessonPdfUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-brand-600 hover:text-brand-700"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Ver guía de actividades (PDF)
-              </a>
-            )}
-          </div>
+          )}
 
           {selectedTask.comments.length > 0 ? (
             <div>
@@ -159,7 +173,7 @@ export default function AdminTasks() {
             </div>
           ) : (
             <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-xl text-sm text-yellow-700">
-              El alumno aún no ha entregado esta tarea.
+              {selectedTask.lessonHasTask ? "El alumno aún no ha entregado esta tarea." : "Todavía no hay comentarios."}
             </div>
           )}
 

@@ -36,8 +36,20 @@ export default function PurchaseGate({ course }: PurchaseGateProps) {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center mb-6">
+    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden mb-6 text-center">
       {showLogin && <LoginModal onClose={() => setShowLogin(false)} />}
+      {course.previewVimeoEmbedUrl && (
+        <div className="aspect-video bg-slate-900">
+          <iframe
+            src={course.previewVimeoEmbedUrl}
+            className="w-full h-full"
+            allow="autoplay; fullscreen; picture-in-picture"
+            allowFullScreen
+            title={`Presentación de ${course.title}`}
+          />
+        </div>
+      )}
+      <div className="p-8">
       <div className="w-16 h-16 bg-brand-50 rounded-full flex items-center justify-center mx-auto mb-4">
         <svg className="w-8 h-8 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
@@ -72,6 +84,7 @@ export default function PurchaseGate({ course }: PurchaseGateProps) {
           </button>
         </>
       )}
+      </div>
     </div>
   );
 }

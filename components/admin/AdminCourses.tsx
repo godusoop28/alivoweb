@@ -7,6 +7,7 @@ import { ApiError } from "@/lib/api/client";
 import { alivosAssets } from "@/lib/assets/alivosAssets";
 import Modal from "@/components/ui/Modal";
 import FileUploadField from "@/components/ui/FileUploadField";
+import VimeoUploadField from "@/components/admin/VimeoUploadField";
 
 interface CourseFormData {
   title: string;
@@ -17,6 +18,7 @@ interface CourseFormData {
   status: CourseStatus;
   coverImage: string;
   bannerImage: string;
+  previewVimeoUrl: string;
 }
 
 const defaultForm: CourseFormData = {
@@ -28,6 +30,7 @@ const defaultForm: CourseFormData = {
   status: "DRAFT",
   coverImage: "",
   bannerImage: "",
+  previewVimeoUrl: "",
 };
 
 const coverExamples = [
@@ -84,6 +87,7 @@ export default function AdminCourses() {
         status: formData.status,
         coverImage: formData.coverImage || undefined,
         bannerImage: formData.bannerImage || undefined,
+        previewVimeoUrl: formData.previewVimeoUrl,
       };
       if (editingId) {
         await adminApi.updateCourse(editingId, input);
@@ -112,6 +116,7 @@ export default function AdminCourses() {
       status: course.status,
       coverImage: course.imageUrl ?? "",
       bannerImage: course.bannerImage ?? "",
+      previewVimeoUrl: course.previewVimeoUrl ?? "",
     });
     setShowForm(true);
   };
@@ -242,6 +247,13 @@ export default function AdminCourses() {
                   <option value="PUBLISHED">Publicado</option>
                   <option value="HIDDEN">Oculto</option>
                 </select>
+              </div>
+              <div>
+                <VimeoUploadField
+                  label="Video de presentación (visible antes de comprar)"
+                  value={formData.previewVimeoUrl}
+                  onChange={(url) => setFormData({ ...formData, previewVimeoUrl: url })}
+                />
               </div>
               <div>
                 <FileUploadField

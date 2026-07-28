@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { listCourses } from "@/lib/api/courses";
 import { getFallbackCourses } from "@/lib/api/mockFallback";
 import { Course } from "@/lib/api/types";
+import AdvisoryModal from "@/components/advisory/AdvisoryModal";
 
 interface CoursesPageProps {
   onOpenCourse: (courseId: string) => void;
@@ -47,6 +48,7 @@ export default function CoursesPage({ onOpenCourse }: CoursesPageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [bookmarked, setBookmarked] = useState<Record<string, boolean>>({});
+  const [showAdvisory, setShowAdvisory] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -76,6 +78,22 @@ export default function CoursesPage({ onOpenCourse }: CoursesPageProps) {
             No pudimos conectar con el servidor en este momento. Mostrando un catálogo de referencia.
           </div>
         )}
+
+        {showAdvisory && <AdvisoryModal onClose={() => setShowAdvisory(false)} />}
+
+        {/* Advisory banner */}
+        <div className="mb-8 sm:mb-10 p-5 bg-alivos-light border border-brand-100 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div>
+            <p className="font-semibold text-alivos-dark">¿No sabes qué curso elegir?</p>
+            <p className="text-sm text-slate-500">Agenda un asesoramiento en línea gratuito con nuestro equipo.</p>
+          </div>
+          <button
+            onClick={() => setShowAdvisory(true)}
+            className="shrink-0 px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl text-sm transition-colors"
+          >
+            Solicitar asesoramiento en línea
+          </button>
+        </div>
 
         {/* Sort filter (decorative, matches the original catalog layout) */}
         <div className="flex justify-center sm:justify-start mb-10 sm:mb-12">

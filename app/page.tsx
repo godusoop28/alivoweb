@@ -19,6 +19,7 @@ import AdminStudents from "@/components/admin/AdminStudents";
 import AdminPurchases from "@/components/admin/AdminPurchases";
 import AdminTasks from "@/components/admin/AdminTasks";
 import AdminAccess from "@/components/admin/AdminAccess";
+import AdminAppointments from "@/components/admin/AdminAppointments";
 import AdminSettings from "@/components/admin/AdminSettings";
 
 type StudentView = "home" | "courses" | "course" | "dashboard" | "contact";
@@ -30,6 +31,7 @@ type AdminView =
   | "admin-purchases"
   | "admin-tasks"
   | "admin-access"
+  | "admin-appointments"
   | "admin-settings";
 
 type CurrentView = StudentView | AdminView;
@@ -119,6 +121,7 @@ export default function App() {
       case "admin-purchases": return <AdminPurchases />;
       case "admin-tasks": return <AdminTasks />;
       case "admin-access": return <AdminAccess />;
+      case "admin-appointments": return <AdminAppointments />;
       case "admin-settings": return <AdminSettings />;
       default: return <AdminDashboard />;
     }

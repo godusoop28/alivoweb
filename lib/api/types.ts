@@ -1,12 +1,14 @@
 export type Role = "ADMIN" | "STUDENT";
 export type UserStatus = "ACTIVE" | "BLOCKED";
 export type CourseStatus = "PUBLISHED" | "DRAFT" | "HIDDEN";
-export type LessonType = "VIDEO" | "TEXT" | "PDF" | "TASK" | "EVALUATION";
+export type LessonType = "VIDEO" | "TEXT" | "PDF" | "TASK" | "EVALUATION" | "FORM";
 export type EnrollmentSource = "PURCHASE" | "MANUAL" | "COURTESY" | "TRANSFER" | "SCHOLARSHIP" | "TEST";
 export type PurchaseStatus = "PAID" | "PENDING" | "FAILED";
 export type PurchaseMethod = "MERCADO_PAGO" | "TRANSFER" | "MANUAL";
 export type TaskStatus = "PENDING" | "DELIVERED" | "REVIEWED" | "NEEDS_CORRECTION" | "APPROVED";
 export type ManualAccessStatus = "ACTIVE" | "REVOKED";
+export type AppointmentStatus = "PENDING" | "CONFIRMED" | "CANCELLED";
+export type FormFieldType = "TEXT" | "TEXTAREA" | "CHOICE" | "CHECKBOX";
 
 export interface AuthUser {
   id: string;
@@ -37,8 +39,17 @@ export interface Lesson {
   imageUrl: string | null;
   pdfUrl: string | null;
   assetType: string | null;
+  formSchema: string | null;
   completed: boolean;
   locked: boolean;
+}
+
+export interface FormField {
+  id: string;
+  label: string;
+  type: FormFieldType;
+  required: boolean;
+  options: string[];
 }
 
 export interface Module {
@@ -69,6 +80,9 @@ export interface Course {
   price: number;
   imageUrl: string | null;
   bannerImage: string | null;
+  previewVimeoUrl: string | null;
+  previewVimeoEmbedUrl: string | null;
+  previewVimeoThumbnail: string | null;
   status: CourseStatus;
   studentsCount: number;
   enrolled: boolean;
@@ -225,6 +239,7 @@ export interface TaskSubmission {
   studentEmail: string;
   lessonTitle: string;
   courseTitle: string;
+  lessonHasTask: boolean;
   taskInstructions: string | null;
   lessonPdfUrl: string | null;
   lessonImageUrl: string | null;
@@ -235,6 +250,7 @@ export interface TaskSubmission {
 }
 
 export interface MyTask {
+  lessonHasTask: boolean;
   taskInstructions: string | null;
   lessonPdfUrl: string | null;
   lessonImageUrl: string | null;
@@ -242,6 +258,26 @@ export interface MyTask {
   comments: TaskComment[];
   deliveredAt: string | null;
   reviewedAt: string | null;
+}
+
+export interface FormResponse {
+  id: string;
+  studentName: string;
+  studentEmail: string;
+  answers: string;
+  submittedAt: string;
+}
+
+export interface Appointment {
+  id: string;
+  studentName: string;
+  studentEmail: string;
+  date: string;
+  time: string;
+  notes: string | null;
+  status: AppointmentStatus;
+  adminNote: string | null;
+  createdAt: string;
 }
 
 export interface ManualAccess {
@@ -263,6 +299,11 @@ export interface Settings {
   facebook: string | null;
   website: string | null;
   brandName: string | null;
+  advisoryEnabled: boolean | null;
+  advisorySlotMinutes: number | null;
+  advisoryDays: string | null;
+  advisoryStartTime: string | null;
+  advisoryEndTime: string | null;
 }
 
 export interface VimeoResolved {

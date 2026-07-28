@@ -9,7 +9,6 @@ import TaskCommentList from "@/components/course/TaskCommentList";
 
 interface TaskThreadProps {
   lessonId: string;
-  taskDescription: string | null;
 }
 
 const STATUS_META: Record<TaskStatus, { label: string; className: string }> = {
@@ -20,7 +19,7 @@ const STATUS_META: Record<TaskStatus, { label: string; className: string }> = {
   APPROVED: { label: "Aprobada", className: "bg-green-100 text-green-700" },
 };
 
-export default function TaskThread({ lessonId, taskDescription }: TaskThreadProps) {
+export default function TaskThread({ lessonId }: TaskThreadProps) {
   const [task, setTask] = useState<MyTask | null>(null);
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState("");
@@ -106,6 +105,7 @@ export default function TaskThread({ lessonId, taskDescription }: TaskThreadProp
     }
   };
 
+  const isTask = task?.lessonHasTask ?? false;
   const meta = STATUS_META[task?.status ?? "PENDING"];
   const hasThread = !!task && task.comments.length > 0;
 
@@ -114,15 +114,21 @@ export default function TaskThread({ lessonId, taskDescription }: TaskThreadProp
       <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
         <h3 className="font-semibold text-alivos-dark flex items-center gap-2">
           <svg className="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            {isTask ? (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            )}
           </svg>
-          Tarea de la lección
+          {isTask ? "Tarea de la lección" : "Comentarios de la lección"}
         </h3>
-        <span className={`shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold ${meta.className}`}>
-          {meta.label}
-        </span>
+        {isTask && (
+          <span className={`shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold ${meta.className}`}>
+            {meta.label}
+          </span>
+        )}
       </div>
-      {taskDescription && <p className="text-sm text-slate-600 leading-relaxed mb-4">{taskDescription}</p>}
+      {task?.taskInstructions && <p className="text-sm text-slate-600 leading-relaxed mb-4">{task.taskInstructions}</p>}
 
       {loading ? (
         <p className="text-xs text-slate-400">Cargando...</p>
@@ -138,7 +144,9 @@ export default function TaskThread({ lessonId, taskDescription }: TaskThreadProp
             <textarea
               className="w-full border border-slate-200 rounded-xl p-3 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-300 resize-none"
               rows={3}
-              placeholder={hasThread ? "Escribe un comentario..." : "Escribe tu respuesta aquí..."}
+              placeholder={
+                hasThread ? "Escribe un comentario..." : isTask ? "Escribe tu respuesta aquí..." : "Escribe tu pregunta o comentario..."
+              }
               value={text}
               onChange={(e) => setText(e.target.value)}
             />
@@ -193,7 +201,7 @@ export default function TaskThread({ lessonId, taskDescription }: TaskThreadProp
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>
-                {sending ? "Enviando..." : hasThread ? "Enviar comentario" : "Enviar tarea"}
+                {sending ? "Enviando..." : hasThread ? "Enviar comentario" : isTask ? "Enviar tarea" : "Enviar"}
               </button>
             </div>
           </form>

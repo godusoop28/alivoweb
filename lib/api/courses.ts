@@ -1,5 +1,15 @@
 import { apiFetch } from "./client";
-import { Course, CourseReview, MyTask, Purchase, StudentDashboard, VimeoResolved, VimeoUploadTicket } from "./types";
+import {
+  Appointment,
+  Course,
+  CourseReview,
+  FormResponse,
+  MyTask,
+  Purchase,
+  StudentDashboard,
+  VimeoResolved,
+  VimeoUploadTicket,
+} from "./types";
 
 export async function listCourses(token?: string | null) {
   return apiFetch<{ courses: Course[] }>("/courses", { token });
@@ -35,6 +45,26 @@ export async function submitCourseReview(slug: string, input: { rating: number; 
 
 export async function purchaseCourse(slug: string) {
   return apiFetch<Purchase>(`/courses/${slug}/purchase`, { method: "POST" });
+}
+
+export async function getFormResponse(lessonId: string) {
+  return apiFetch<FormResponse | null>(`/lessons/${lessonId}/form-response`);
+}
+
+export async function submitFormResponse(lessonId: string, answers: string) {
+  return apiFetch<FormResponse>(`/lessons/${lessonId}/form-response`, { method: "POST", body: { answers } });
+}
+
+export async function getAdvisoryAvailability(date: string) {
+  return apiFetch<{ slots: string[] }>(`/advisory/availability?date=${date}`, { token: null });
+}
+
+export async function createAppointment(input: { date: string; time: string; notes?: string }) {
+  return apiFetch<Appointment>("/advisory/appointments", { method: "POST", body: input });
+}
+
+export async function getMyAppointments() {
+  return apiFetch<{ appointments: Appointment[] }>("/advisory/appointments/me");
 }
 
 export async function resolveVimeoUrl(url: string) {

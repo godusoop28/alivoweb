@@ -1,7 +1,10 @@
 import { apiFetch } from "./client";
 import {
   AdminDashboard,
+  Appointment,
+  AppointmentStatus,
   Course,
+  FormResponse,
   ManualAccess,
   Purchase,
   Student,
@@ -24,6 +27,7 @@ export interface CourseInput {
   price: number;
   coverImage?: string;
   bannerImage?: string;
+  previewVimeoUrl?: string;
   status?: "PUBLISHED" | "DRAFT" | "HIDDEN";
 }
 
@@ -70,7 +74,7 @@ export async function deleteModule(id: string) {
 
 export interface LessonInput {
   title: string;
-  type?: "VIDEO" | "TEXT" | "PDF" | "TASK" | "EVALUATION";
+  type?: "VIDEO" | "TEXT" | "PDF" | "TASK" | "EVALUATION" | "FORM";
   description?: string;
   order?: number;
   durationMinutes?: number;
@@ -83,6 +87,7 @@ export interface LessonInput {
   imageUrl?: string;
   pdfUrl?: string;
   assetType?: string;
+  formSchema?: string;
 }
 
 export async function createLesson(moduleId: string, input: LessonInput) {
@@ -95,6 +100,10 @@ export async function updateLesson(id: string, input: Partial<LessonInput>) {
 
 export async function deleteLesson(id: string) {
   return apiFetch<{ ok: true }>(`/admin/lessons/${id}`, { method: "DELETE" });
+}
+
+export async function listFormResponses(lessonId: string) {
+  return apiFetch<{ responses: FormResponse[] }>(`/admin/lessons/${lessonId}/form-responses`);
 }
 
 // ----- Students -----
@@ -155,4 +164,18 @@ export async function grantManualAccess(input: {
 
 export async function revokeManualAccess(id: string) {
   return apiFetch(`/admin/manual-access/${id}/revoke`, { method: "PATCH" });
+}
+
+// ----- Appointments -----
+
+export async function listAppointments() {
+  return apiFetch<{ appointments: Appointment[] }>("/admin/appointments");
+}
+
+export async function updateAppointmentStatus(id: string, status: AppointmentStatus, adminNote?: string) {
+  return apiFetch<Appointment>(`/admin/appointments/${id}/status`, { method: "PATCH", body: { status, adminNote } });
+}
+
+export async function rescheduleAppointment(id: string, date: string, time: string) {
+  return apiFetch<Appointment>(`/admin/appointments/${id}/reschedule`, { method: "PATCH", body: { date, time } });
 }
