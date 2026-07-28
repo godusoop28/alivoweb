@@ -334,7 +334,7 @@ export default function AdminModules() {
         <Modal
           title={editingLessonId ? "Editar lección" : "Agregar lección"}
           onClose={() => setShowLessonForm(false)}
-          maxWidth="max-w-lg"
+          maxWidth={lessonForm.type === "FORM" ? "max-w-3xl" : "max-w-lg"}
           footer={
             <>
               <button onClick={() => setShowLessonForm(false)} className="flex-1 py-2.5 border border-slate-200 text-slate-600 rounded-xl text-sm font-semibold hover:bg-slate-50 transition-colors">
