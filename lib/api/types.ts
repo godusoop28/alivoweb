@@ -9,6 +9,7 @@ export type TaskStatus = "PENDING" | "DELIVERED" | "REVIEWED" | "NEEDS_CORRECTIO
 export type ManualAccessStatus = "ACTIVE" | "REVOKED";
 export type AppointmentStatus = "PENDING" | "CONFIRMED" | "CANCELLED";
 export type FormFieldType = "TEXT" | "TEXTAREA" | "CHOICE" | "CHECKBOX";
+export type ResourceType = "PDF" | "VIDEO" | "ARTICLE" | "LINK";
 
 export interface AuthUser {
   id: string;
@@ -304,6 +305,22 @@ export interface Settings {
   advisoryDays: string | null;
   advisoryStartTime: string | null;
   advisoryEndTime: string | null;
+}
+
+export interface LearningResource {
+  id: string;
+  title: string;
+  description: string | null;
+  type: ResourceType;
+  coverImage: string | null;
+  fileUrl: string | null;
+  vimeoUrl: string | null;
+  vimeoEmbedUrl: string | null;
+  vimeoThumbnail: string | null;
+  content: string | null;
+  externalUrl: string | null;
+  visible: boolean;
+  createdAt: string;
 }
 
 export interface VimeoResolved {

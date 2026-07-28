@@ -9,9 +9,9 @@ const LOGO_H = "/logos/logo-nav-horizontal-completo.png";
 const LOGO_ICON = "/logos/logo-icono-isotipo.png";
 
 type View =
-  | "home" | "courses" | "course" | "dashboard" | "contact"
+  | "home" | "courses" | "course" | "dashboard" | "contact" | "resources"
   | "admin-dashboard" | "admin-courses" | "admin-modules" | "admin-students"
-  | "admin-purchases" | "admin-tasks" | "admin-access" | "admin-appointments" | "admin-settings";
+  | "admin-purchases" | "admin-tasks" | "admin-access" | "admin-appointments" | "admin-resources" | "admin-settings";
 
 interface NavbarProps {
   currentView: View;
@@ -113,6 +113,16 @@ export default function Navbar({ currentView, onNavigate }: NavbarProps) {
                     }`}
                   >
                     Mis cursos
+                  </button>
+                )}
+                {user?.role === "STUDENT" && (
+                  <button
+                    onClick={() => onNavigate("resources")}
+                    className={`text-sm font-medium transition-colors ${
+                      isActive("resources") ? "text-success-700 font-semibold" : "text-slate-500 hover:text-success-700"
+                    }`}
+                  >
+                    Aprende Más
                   </button>
                 )}
               </div>
@@ -268,6 +278,16 @@ export default function Navbar({ currentView, onNavigate }: NavbarProps) {
                   }`}
                 >
                   Mis cursos
+                </button>
+              )}
+              {!isAdmin && user?.role === "STUDENT" && (
+                <button
+                  onClick={() => { onNavigate("resources"); setMobileOpen(false); }}
+                  className={`w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    isActive("resources") ? "bg-success-50 text-success-700" : "text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  Aprende Más
                 </button>
               )}
               <div className="pt-2 border-t border-slate-100 space-y-2">

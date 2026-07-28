@@ -5,8 +5,10 @@ import {
   AppointmentStatus,
   Course,
   FormResponse,
+  LearningResource,
   ManualAccess,
   Purchase,
+  ResourceType,
   Student,
   StudentDetail,
   TaskSubmission,
@@ -178,4 +180,35 @@ export async function updateAppointmentStatus(id: string, status: AppointmentSta
 
 export async function rescheduleAppointment(id: string, date: string, time: string) {
   return apiFetch<Appointment>(`/admin/appointments/${id}/reschedule`, { method: "PATCH", body: { date, time } });
+}
+
+// ----- Learning resources ("Aprende Más") -----
+
+export interface LearningResourceInput {
+  title: string;
+  description?: string;
+  type: ResourceType;
+  coverImage?: string;
+  fileUrl?: string;
+  vimeoUrl?: string;
+  content?: string;
+  externalUrl?: string;
+  visible?: boolean;
+  order?: number;
+}
+
+export async function listAdminResources() {
+  return apiFetch<{ resources: LearningResource[] }>("/admin/resources");
+}
+
+export async function createResource(input: LearningResourceInput) {
+  return apiFetch<LearningResource>("/admin/resources", { method: "POST", body: input });
+}
+
+export async function updateResource(id: string, input: Partial<LearningResourceInput>) {
+  return apiFetch<LearningResource>(`/admin/resources/${id}`, { method: "PATCH", body: input });
+}
+
+export async function deleteResource(id: string) {
+  return apiFetch<{ ok: true }>(`/admin/resources/${id}`, { method: "DELETE" });
 }

@@ -11,6 +11,7 @@ import CoursesPage from "@/components/courses/CoursesPage";
 import CourseViewer from "@/components/course/CourseViewer";
 import StudentDashboard from "@/components/dashboard/StudentDashboard";
 import ContactPage from "@/components/contact/ContactPage";
+import ResourcesPage from "@/components/resources/ResourcesPage";
 import AdminLayout from "@/components/admin/AdminLayout";
 import AdminDashboard from "@/components/admin/AdminDashboard";
 import AdminCourses from "@/components/admin/AdminCourses";
@@ -20,9 +21,10 @@ import AdminPurchases from "@/components/admin/AdminPurchases";
 import AdminTasks from "@/components/admin/AdminTasks";
 import AdminAccess from "@/components/admin/AdminAccess";
 import AdminAppointments from "@/components/admin/AdminAppointments";
+import AdminResources from "@/components/admin/AdminResources";
 import AdminSettings from "@/components/admin/AdminSettings";
 
-type StudentView = "home" | "courses" | "course" | "dashboard" | "contact";
+type StudentView = "home" | "courses" | "course" | "dashboard" | "contact" | "resources";
 type AdminView =
   | "admin-dashboard"
   | "admin-courses"
@@ -32,6 +34,7 @@ type AdminView =
   | "admin-tasks"
   | "admin-access"
   | "admin-appointments"
+  | "admin-resources"
   | "admin-settings";
 
 type CurrentView = StudentView | AdminView;
@@ -107,6 +110,8 @@ export default function App() {
         );
       case "contact":
         return <ContactPage />;
+      case "resources":
+        return <ResourcesPage />;
       default:
         return null;
     }
@@ -122,6 +127,7 @@ export default function App() {
       case "admin-tasks": return <AdminTasks />;
       case "admin-access": return <AdminAccess />;
       case "admin-appointments": return <AdminAppointments />;
+      case "admin-resources": return <AdminResources />;
       case "admin-settings": return <AdminSettings />;
       default: return <AdminDashboard />;
     }
