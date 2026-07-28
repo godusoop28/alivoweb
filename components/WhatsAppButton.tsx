@@ -1,9 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getSettings } from "@/lib/api/settings";
+
+const FALLBACK_WHATSAPP = "5213329421890";
 
 export default function WhatsAppButton() {
   const [hovered, setHovered] = useState(false);
+  const [whatsapp, setWhatsapp] = useState(FALLBACK_WHATSAPP);
+
+  useEffect(() => {
+    getSettings()
+      .then(({ settings }) => {
+        if (settings.whatsapp) setWhatsapp(settings.whatsapp.replace(/\D/g, ""));
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <div
@@ -19,7 +31,7 @@ export default function WhatsAppButton() {
         </div>
       )}
       <a
-        href="https://wa.me/525528132020"
+        href={`https://wa.me/${whatsapp}`}
         target="_blank"
         rel="noopener noreferrer"
         className="flex items-center justify-center w-16 h-16 sm:w-14 sm:h-14 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"

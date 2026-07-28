@@ -12,7 +12,7 @@ interface AdvisoryModalProps {
   onClose: () => void;
 }
 
-const FALLBACK_WHATSAPP = "525528132020";
+const FALLBACK_WHATSAPP = "5213329421890";
 
 function todayIso() {
   const d = new Date();
