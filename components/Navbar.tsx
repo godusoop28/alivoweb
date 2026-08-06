@@ -11,7 +11,9 @@ const LOGO_ICON = "/logos/logo-icono-isotipo.png";
 type View =
   | "home" | "courses" | "course" | "dashboard" | "contact" | "resources"
   | "admin-dashboard" | "admin-courses" | "admin-modules" | "admin-students"
-  | "admin-purchases" | "admin-tasks" | "admin-access" | "admin-appointments" | "admin-resources" | "admin-settings";
+  | "admin-purchases" | "admin-tasks" | "admin-access" | "admin-appointments"
+  | "admin-professionals" | "admin-appointment-access" | "admin-reviews" | "admin-testimonials"
+  | "admin-resources" | "admin-settings";
 
 interface NavbarProps {
   currentView: View;

@@ -1,10 +1,12 @@
 import { apiFetch } from "./client";
 import {
   Appointment,
+  AppointmentBooking,
   Course,
   CourseReview,
   FormResponse,
   MyTask,
+  Professional,
   Purchase,
   StudentDashboard,
   VimeoResolved,
@@ -55,12 +57,24 @@ export async function submitFormResponse(lessonId: string, answers: string) {
   return apiFetch<FormResponse>(`/lessons/${lessonId}/form-response`, { method: "POST", body: { answers } });
 }
 
-export async function getAdvisoryAvailability(date: string) {
-  return apiFetch<{ slots: string[] }>(`/advisory/availability?date=${date}`, { token: null });
+export async function listProfessionals() {
+  return apiFetch<{ professionals: Professional[] }>("/advisory/professionals", { token: null });
 }
 
-export async function createAppointment(input: { date: string; time: string; notes?: string }) {
-  return apiFetch<Appointment>("/advisory/appointments", { method: "POST", body: input });
+export async function getAdvisoryAvailability(professionalId: string, date: string) {
+  return apiFetch<{ slots: string[] }>(
+    `/advisory/availability?professionalId=${professionalId}&date=${date}`,
+    { token: null }
+  );
+}
+
+export async function createAppointment(input: {
+  professionalId: string;
+  date: string;
+  time: string;
+  notes?: string;
+}) {
+  return apiFetch<AppointmentBooking>("/advisory/appointments", { method: "POST", body: input });
 }
 
 export async function getMyAppointments() {
