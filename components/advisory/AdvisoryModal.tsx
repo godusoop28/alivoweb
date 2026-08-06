@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createAppointment, getAdvisoryAvailability } from "@/lib/api/courses";
+import { createAppointment, getAdvisoryAvailability, listProfessionals } from "@/lib/api/courses";
 import { getSettings } from "@/lib/api/settings";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { ApiError } from "@/lib/api/client";
+import { Professional } from "@/lib/api/types";
 import Modal from "@/components/ui/Modal";
 import LoginModal from "@/components/auth/LoginModal";
 
@@ -19,11 +20,18 @@ function todayIso() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+type Mode = "choose" | "professional" | "schedule";
+
 export default function AdvisoryModal({ onClose }: AdvisoryModalProps) {
   const { user } = useAuth();
-  const [mode, setMode] = useState<"choose" | "schedule">("choose");
+  const [mode, setMode] = useState<Mode>("choose");
   const [showLogin, setShowLogin] = useState(false);
   const [whatsapp, setWhatsapp] = useState(FALLBACK_WHATSAPP);
+
+  const [professionals, setProfessionals] = useState<Professional[]>([]);
+  const [loadingProfessionals, setLoadingProfessionals] = useState(false);
+  const [selectedProfessional, setSelectedProfessional] = useState<Professional | null>(null);
+
   const [date, setDate] = useState(todayIso());
   const [slots, setSlots] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
@@ -32,6 +40,7 @@ export default function AdvisoryModal({ onClose }: AdvisoryModalProps) {
   const [booking, setBooking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [booked, setBooked] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
     getSettings()
@@ -42,11 +51,20 @@ export default function AdvisoryModal({ onClose }: AdvisoryModalProps) {
   }, []);
 
   useEffect(() => {
-    if (mode !== "schedule") return;
+    if (mode !== "professional") return;
+    setLoadingProfessionals(true);
+    listProfessionals()
+      .then(({ professionals }) => setProfessionals(professionals))
+      .catch(() => setProfessionals([]))
+      .finally(() => setLoadingProfessionals(false));
+  }, [mode]);
+
+  useEffect(() => {
+    if (mode !== "schedule" || !selectedProfessional) return;
     let cancelled = false;
     setLoadingSlots(true);
     setSelectedSlot(null);
-    getAdvisoryAvailability(date)
+    getAdvisoryAvailability(selectedProfessional.id, date)
       .then(({ slots }) => {
         if (!cancelled) setSlots(slots);
       })
@@ -59,7 +77,7 @@ export default function AdvisoryModal({ onClose }: AdvisoryModalProps) {
     return () => {
       cancelled = true;
     };
-  }, [mode, date]);
+  }, [mode, date, selectedProfessional]);
 
   const openWhatsapp = (message: string) => {
     window.open(`https://wa.me/${whatsapp}?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
@@ -69,19 +87,40 @@ export default function AdvisoryModal({ onClose }: AdvisoryModalProps) {
     openWhatsapp("Hola, me gustaría solicitar un asesoramiento en línea con el equipo de ALIVOS.");
   };
 
+  const handlePickProfessional = (professional: Professional) => {
+    if (!user) {
+      setShowLogin(true);
+      return;
+    }
+    setSelectedProfessional(professional);
+    setMode("schedule");
+  };
+
   const handleBook = async () => {
     if (!user) {
       setShowLogin(true);
       return;
     }
-    if (!selectedSlot) return;
+    if (!selectedProfessional || !selectedSlot) return;
     setBooking(true);
     setError(null);
     try {
-      await createAppointment({ date, time: selectedSlot, notes: notes.trim() || undefined });
+      const { appointment, purchase, requiresPayment } = await createAppointment({
+        professionalId: selectedProfessional.id,
+        date,
+        time: selectedSlot,
+        notes: notes.trim() || undefined,
+      });
+
+      if (requiresPayment && purchase?.initPoint) {
+        setRedirecting(true);
+        window.location.href = purchase.initPoint;
+        return;
+      }
+
       setBooked(true);
       openWhatsapp(
-        `Hola, agendé una cita de asesoramiento para el ${date} a las ${selectedSlot.slice(0, 5)}.${
+        `Hola, agendé una cita de asesoramiento con ${selectedProfessional.name} para el ${appointment.date} a las ${selectedSlot.slice(0, 5)}.${
           notes.trim() ? ` Motivo: ${notes.trim()}` : ""
         }`
       );
@@ -100,7 +139,7 @@ export default function AdvisoryModal({ onClose }: AdvisoryModalProps) {
         <div className="space-y-3">
           <p className="text-sm text-slate-500">¿Cómo prefieres contactarnos?</p>
           <button
-            onClick={() => setMode("schedule")}
+            onClick={() => setMode("professional")}
             className="w-full flex items-center gap-3 p-4 border border-slate-200 rounded-xl hover:border-brand-300 hover:bg-brand-50 transition-colors text-left"
           >
             <span className="w-10 h-10 bg-brand-100 rounded-full flex items-center justify-center shrink-0">
@@ -115,7 +154,7 @@ export default function AdvisoryModal({ onClose }: AdvisoryModalProps) {
             </span>
             <span>
               <span className="block font-semibold text-alivos-dark text-sm">Agendar una cita</span>
-              <span className="block text-xs text-slate-500">Elige día y hora disponible</span>
+              <span className="block text-xs text-slate-500">Elige profesional, día y hora disponible</span>
             </span>
           </button>
           <button
@@ -135,14 +174,63 @@ export default function AdvisoryModal({ onClose }: AdvisoryModalProps) {
         </div>
       )}
 
-      {mode === "schedule" && !booked && (
-        <div className="space-y-4">
+      {mode === "professional" && (
+        <div className="space-y-3">
           <button
             onClick={() => setMode("choose")}
             className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1"
           >
             ← Volver
           </button>
+          <p className="text-sm text-slate-500">¿Con quién te gustaría agendar?</p>
+          {loadingProfessionals ? (
+            <p className="text-xs text-slate-400">Cargando profesionales...</p>
+          ) : professionals.length === 0 ? (
+            <p className="text-xs text-slate-400">
+              Todavía no hay profesionales disponibles para agendar en línea. Escríbenos por WhatsApp.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {professionals.map((professional) => (
+                <button
+                  key={professional.id}
+                  onClick={() => handlePickProfessional(professional)}
+                  className="w-full flex items-center gap-3 p-4 border border-slate-200 rounded-xl hover:border-brand-300 hover:bg-brand-50 transition-colors text-left"
+                >
+                  {professional.photoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={professional.photoUrl}
+                      alt={professional.name}
+                      className="w-10 h-10 rounded-full object-cover shrink-0"
+                    />
+                  ) : (
+                    <span className="w-10 h-10 bg-brand-100 rounded-full flex items-center justify-center shrink-0 text-brand-600 font-bold">
+                      {professional.name.charAt(0)}
+                    </span>
+                  )}
+                  <span>
+                    <span className="block font-semibold text-alivos-dark text-sm">{professional.name}</span>
+                    <span className="block text-xs text-slate-500">{professional.title}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {mode === "schedule" && selectedProfessional && !booked && !redirecting && (
+        <div className="space-y-4">
+          <button
+            onClick={() => setMode("professional")}
+            className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1"
+          >
+            ← Cambiar profesional
+          </button>
+          <p className="text-xs text-slate-500">
+            Agendando con <strong className="text-alivos-dark">{selectedProfessional.name}</strong> ({selectedProfessional.title})
+          </p>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">Fecha</label>
             <input
@@ -196,6 +284,12 @@ export default function AdvisoryModal({ onClose }: AdvisoryModalProps) {
           >
             {booking ? "Agendando..." : "Confirmar cita"}
           </button>
+        </div>
+      )}
+
+      {redirecting && (
+        <div className="p-4 bg-brand-50 border border-brand-200 rounded-xl text-sm text-brand-700">
+          Te estamos llevando a Mercado Pago para completar el pago de tu cita...
         </div>
       )}
 

@@ -1,17 +1,23 @@
 import { apiFetch } from "./client";
 import {
+  AdminCourseReview,
   AdminDashboard,
   Appointment,
+  AppointmentAccess,
   AppointmentStatus,
   Course,
+  CourseReviewStatus,
   FormResponse,
   LearningResource,
   ManualAccess,
+  Professional,
   Purchase,
   ResourceType,
   Student,
   StudentDetail,
   TaskSubmission,
+  Testimonial,
+  TestimonialStatus,
 } from "./types";
 
 export async function getAdminDashboard() {
@@ -180,6 +186,99 @@ export async function updateAppointmentStatus(id: string, status: AppointmentSta
 
 export async function rescheduleAppointment(id: string, date: string, time: string) {
   return apiFetch<Appointment>(`/admin/appointments/${id}/reschedule`, { method: "PATCH", body: { date, time } });
+}
+
+export async function createAdminAppointment(input: {
+  userEmail: string;
+  professionalId: string;
+  date: string;
+  time: string;
+  notes?: string;
+  status?: AppointmentStatus;
+}) {
+  return apiFetch<{ appointment: Appointment }>("/admin/appointments", { method: "POST", body: input });
+}
+
+// ----- Professionals -----
+
+export interface ProfessionalInput {
+  name: string;
+  title: string;
+  bio?: string;
+  photoUrl?: string;
+  active?: boolean;
+  slotMinutes?: number;
+  workDays?: string;
+  startTime?: string;
+  endTime?: string;
+}
+
+export async function listAdminProfessionals() {
+  return apiFetch<{ professionals: Professional[] }>("/admin/professionals");
+}
+
+export async function createProfessional(input: ProfessionalInput) {
+  return apiFetch<{ professional: Professional }>("/admin/professionals", { method: "POST", body: input });
+}
+
+export async function updateProfessional(id: string, input: Partial<ProfessionalInput>) {
+  return apiFetch<{ professional: Professional }>(`/admin/professionals/${id}`, { method: "PATCH", body: input });
+}
+
+export async function deactivateProfessional(id: string) {
+  return apiFetch<{ ok: true }>(`/admin/professionals/${id}`, { method: "DELETE" });
+}
+
+// ----- Appointment access (free bookings) -----
+
+export async function listAppointmentAccess() {
+  return apiFetch<{ accesses: AppointmentAccess[] }>("/admin/appointment-access");
+}
+
+export async function grantAppointmentAccess(input: { email: string; reason?: string; expiresAt?: string }) {
+  return apiFetch<{ access: AppointmentAccess }>("/admin/appointment-access", { method: "POST", body: input });
+}
+
+export async function revokeAppointmentAccess(id: string) {
+  return apiFetch(`/admin/appointment-access/${id}/revoke`, { method: "PATCH" });
+}
+
+// ----- Review moderation -----
+
+export async function listAdminReviews() {
+  return apiFetch<{ reviews: AdminCourseReview[] }>("/admin/reviews");
+}
+
+export async function updateReviewStatus(id: string, status: CourseReviewStatus) {
+  return apiFetch<{ ok: true }>(`/admin/reviews/${id}/status`, { method: "PATCH", body: { status } });
+}
+
+// ----- Testimonials -----
+
+export interface TestimonialInput {
+  authorName: string;
+  authorContext?: string;
+  photoUrl?: string;
+  rating?: number;
+  comment: string;
+  status?: TestimonialStatus;
+  displayOrder?: number;
+}
+
+export async function listAdminTestimonials() {
+  return apiFetch<{ testimonials: Testimonial[] }>("/admin/testimonials");
+}
+
+export async function createTestimonial(input: TestimonialInput) {
+  return apiFetch<{ testimonial: Testimonial }>("/admin/testimonials", { method: "POST", body: input });
+}
+
+export async function updateTestimonial(id: string, input: Partial<TestimonialInput>) {
+  return apiFetch<{ testimonial: Testimonial }>(`/admin/testimonials/${id}`, { method: "PATCH", body: input });
+}
+
+export async function deleteTestimonial(id: string) {
+  return apiFetch<{ ok: true }>(`/admin/testimonials/${id}`, { method: "DELETE" });
 }
 
 // ----- Learning resources ("Aprende Más") -----

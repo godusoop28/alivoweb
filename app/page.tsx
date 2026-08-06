@@ -21,6 +21,10 @@ import AdminPurchases from "@/components/admin/AdminPurchases";
 import AdminTasks from "@/components/admin/AdminTasks";
 import AdminAccess from "@/components/admin/AdminAccess";
 import AdminAppointments from "@/components/admin/AdminAppointments";
+import AdminProfessionals from "@/components/admin/AdminProfessionals";
+import AdminAppointmentAccess from "@/components/admin/AdminAppointmentAccess";
+import AdminReviews from "@/components/admin/AdminReviews";
+import AdminTestimonials from "@/components/admin/AdminTestimonials";
 import AdminResources from "@/components/admin/AdminResources";
 import AdminSettings from "@/components/admin/AdminSettings";
 
@@ -34,10 +38,57 @@ type AdminView =
   | "admin-tasks"
   | "admin-access"
   | "admin-appointments"
+  | "admin-professionals"
+  | "admin-appointment-access"
+  | "admin-reviews"
+  | "admin-testimonials"
   | "admin-resources"
   | "admin-settings";
 
 type CurrentView = StudentView | AdminView;
+
+type PaymentReturnStatus = "success" | "pending" | "failure";
+
+const paymentReturnCopy: Record<PaymentReturnStatus, { tone: string; message: string }> = {
+  success: {
+    tone: "bg-green-50 border-green-200 text-green-700",
+    message: "¡Pago recibido! En unos segundos se activará tu acceso — revisa tu panel.",
+  },
+  pending: {
+    tone: "bg-yellow-50 border-yellow-200 text-yellow-700",
+    message: "Tu pago está en proceso. Te avisaremos en cuanto Mercado Pago lo confirme.",
+  },
+  failure: {
+    tone: "bg-red-50 border-red-200 text-red-700",
+    message: "No se pudo completar el pago. Puedes intentarlo de nuevo cuando quieras.",
+  },
+};
+
+function PaymentReturnBanner() {
+  const [status, setStatus] = useState<PaymentReturnStatus | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const payment = params.get("payment");
+    if (payment === "success" || payment === "pending" || payment === "failure") {
+      setStatus(payment);
+      params.delete("payment");
+      const rest = params.toString();
+      window.history.replaceState({}, "", window.location.pathname + (rest ? `?${rest}` : ""));
+    }
+  }, []);
+
+  if (!status) return null;
+  const copy = paymentReturnCopy[status];
+  return (
+    <div className={`px-4 py-3 text-sm text-center border-b ${copy.tone}`}>
+      {copy.message}
+      <button onClick={() => setStatus(null)} className="ml-3 underline underline-offset-2">
+        Cerrar
+      </button>
+    </div>
+  );
+}
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -127,6 +178,10 @@ export default function App() {
       case "admin-tasks": return <AdminTasks />;
       case "admin-access": return <AdminAccess />;
       case "admin-appointments": return <AdminAppointments />;
+      case "admin-professionals": return <AdminProfessionals />;
+      case "admin-appointment-access": return <AdminAppointmentAccess />;
+      case "admin-reviews": return <AdminReviews />;
+      case "admin-testimonials": return <AdminTestimonials />;
       case "admin-resources": return <AdminResources />;
       case "admin-settings": return <AdminSettings />;
       default: return <AdminDashboard />;
@@ -136,6 +191,7 @@ export default function App() {
   if (isAdmin) {
     return (
       <div className="flex flex-col min-h-screen">
+        <PaymentReturnBanner />
         <Navbar
           currentView={currentView}
           onNavigate={(view) => navigate(view)}
@@ -152,6 +208,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <PaymentReturnBanner />
       <Navbar
         currentView={currentView}
         onNavigate={(view) => navigate(view)}

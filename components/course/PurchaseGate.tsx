@@ -15,7 +15,7 @@ export default function PurchaseGate({ course }: PurchaseGateProps) {
   const { user } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
   const [requesting, setRequesting] = useState(false);
-  const [requested, setRequested] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handlePurchase = async () => {
@@ -26,8 +26,13 @@ export default function PurchaseGate({ course }: PurchaseGateProps) {
     setRequesting(true);
     setError(null);
     try {
-      await purchaseCourse(course.slug);
-      setRequested(true);
+      const purchase = await purchaseCourse(course.slug);
+      if (purchase.initPoint) {
+        setRedirecting(true);
+        window.location.href = purchase.initPoint;
+        return;
+      }
+      setError("No se pudo generar el pago. Intenta de nuevo.");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "No se pudo iniciar la compra. Intenta de nuevo.");
     } finally {
@@ -64,9 +69,9 @@ export default function PurchaseGate({ course }: PurchaseGateProps) {
       <p className="text-sm text-slate-500 mb-5 max-w-sm mx-auto">
         Compra el curso o pide acceso al equipo de ALIVOS para ver videos, PDFs y tareas de esta lección.
       </p>
-      {requested ? (
+      {redirecting ? (
         <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-700 max-w-sm mx-auto">
-          Tu compra quedó registrada y está pendiente de confirmación. Te avisaremos en cuanto se active tu acceso.
+          Te estamos llevando a Mercado Pago para completar el pago...
         </div>
       ) : (
         <>

@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { listCourses } from "@/lib/api/courses";
 import { getFallbackCourses } from "@/lib/api/mockFallback";
-import { Course, Lesson } from "@/lib/api/types";
+import { getHomeTestimonials } from "@/lib/api/testimonials";
+import { Course, HomeTestimonial, Lesson } from "@/lib/api/types";
 import { alivosAssets } from "@/lib/assets/alivosAssets";
 
 interface HomePageProps {
@@ -42,6 +43,42 @@ function CourseRating({ rating, reviewsCount }: { rating: number | null; reviews
   );
 }
 
+function TestimonialCard({ testimonial }: { testimonial: HomeTestimonial }) {
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col h-full">
+      {testimonial.rating != null && (
+        <div className="flex items-center gap-0.5 text-amber-400 mb-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <svg key={i} className="w-4 h-4" fill={i < testimonial.rating! ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.562.562 0 00-.586 0L6.982 21.04a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"
+              />
+            </svg>
+          ))}
+        </div>
+      )}
+      <p className="text-slate-600 text-sm leading-relaxed flex-1">&ldquo;{testimonial.comment}&rdquo;</p>
+      <div className="flex items-center gap-3 mt-5">
+        {testimonial.photoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={testimonial.photoUrl} alt={testimonial.authorName} className="w-10 h-10 rounded-full object-cover" />
+        ) : (
+          <div className="w-10 h-10 rounded-full bg-brand-100 text-brand-600 font-bold flex items-center justify-center">
+            {testimonial.authorName.charAt(0)}
+          </div>
+        )}
+        <div>
+          <p className="font-semibold text-alivos-dark text-sm">{testimonial.authorName}</p>
+          {testimonial.authorContext && <p className="text-xs text-slate-400">{testimonial.authorContext}</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function VideoOrImage({
   embedUrl,
   imageUrl,
@@ -76,6 +113,7 @@ function VideoOrImage({
 
 export default function HomePage({ onNavigate }: HomePageProps) {
   const [courses, setCourses] = useState<Course[]>([]);
+  const [testimonials, setTestimonials] = useState<HomeTestimonial[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -85,6 +123,20 @@ export default function HomePage({ onNavigate }: HomePageProps) {
       })
       .catch(() => {
         if (!cancelled) setCourses(getFallbackCourses());
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    getHomeTestimonials()
+      .then(({ testimonials }) => {
+        if (!cancelled) setTestimonials(testimonials);
+      })
+      .catch(() => {
+        if (!cancelled) setTestimonials([]);
       });
     return () => {
       cancelled = true;
@@ -263,6 +315,23 @@ export default function HomePage({ onNavigate }: HomePageProps) {
           </div>
         </div>
       </section>
+
+      {/* Lo que dicen las familias */}
+      {testimonials.length > 0 && (
+        <section className="bg-alivos-light py-14 sm:py-20">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12 sm:mb-16">
+              <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-4">Lo que dicen las familias</h2>
+              <div className="w-10 h-0.5 bg-black mx-auto" />
+            </div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {testimonials.map((testimonial, index) => (
+                <TestimonialCard key={index} testimonial={testimonial} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

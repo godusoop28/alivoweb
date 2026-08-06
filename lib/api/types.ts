@@ -5,9 +5,13 @@ export type LessonType = "VIDEO" | "TEXT" | "PDF" | "TASK" | "EVALUATION" | "FOR
 export type EnrollmentSource = "PURCHASE" | "MANUAL" | "COURTESY" | "TRANSFER" | "SCHOLARSHIP" | "TEST";
 export type PurchaseStatus = "PAID" | "PENDING" | "FAILED";
 export type PurchaseMethod = "MERCADO_PAGO" | "TRANSFER" | "MANUAL";
+export type PurchaseType = "COURSE" | "APPOINTMENT";
 export type TaskStatus = "PENDING" | "DELIVERED" | "REVIEWED" | "NEEDS_CORRECTION" | "APPROVED";
 export type ManualAccessStatus = "ACTIVE" | "REVOKED";
 export type AppointmentStatus = "PENDING" | "CONFIRMED" | "CANCELLED";
+export type BookingSource = "USER" | "ADMIN";
+export type CourseReviewStatus = "APPROVED" | "HIDDEN";
+export type TestimonialStatus = "PUBLISHED" | "HIDDEN";
 export type FormFieldType = "TEXT" | "TEXTAREA" | "CHOICE" | "CHECKBOX";
 export type ResourceType = "PDF" | "VIDEO" | "ARTICLE" | "LINK";
 
@@ -218,11 +222,13 @@ export interface Purchase {
   studentName: string;
   studentEmail: string;
   courseTitle: string;
+  type: PurchaseType;
   amount: number;
   status: PurchaseStatus;
   method: PurchaseMethod;
   paymentId: string | null;
   createdAt: string;
+  initPoint: string | null;
 }
 
 export interface TaskComment {
@@ -273,12 +279,36 @@ export interface Appointment {
   id: string;
   studentName: string;
   studentEmail: string;
+  professionalId: string | null;
+  professionalName: string | null;
   date: string;
   time: string;
   notes: string | null;
   status: AppointmentStatus;
   adminNote: string | null;
+  amount: number | null;
+  purchaseStatus: PurchaseStatus | null;
+  bookingSource: BookingSource;
   createdAt: string;
+}
+
+export interface AppointmentBooking {
+  appointment: Appointment;
+  purchase: Purchase | null;
+  requiresPayment: boolean;
+}
+
+export interface Professional {
+  id: string;
+  name: string;
+  title: string;
+  bio: string | null;
+  photoUrl: string | null;
+  active: boolean;
+  slotMinutes: number;
+  workDays: string;
+  startTime: string;
+  endTime: string;
 }
 
 export interface ManualAccess {
@@ -292,6 +322,47 @@ export interface ManualAccess {
   status: ManualAccessStatus;
 }
 
+export interface AppointmentAccess {
+  id: string;
+  email: string;
+  grantedAt: string;
+  grantedBy: string;
+  reason: string | null;
+  expiresAt: string | null;
+  status: ManualAccessStatus;
+}
+
+export interface Testimonial {
+  id: string;
+  authorName: string;
+  authorContext: string | null;
+  photoUrl: string | null;
+  rating: number | null;
+  comment: string;
+  status: TestimonialStatus;
+  displayOrder: number | null;
+  createdAt: string;
+}
+
+export interface HomeTestimonial {
+  authorName: string;
+  authorContext: string | null;
+  photoUrl: string | null;
+  rating: number | null;
+  comment: string;
+  createdAt: string;
+}
+
+export interface AdminCourseReview {
+  id: string;
+  courseTitle: string;
+  studentName: string;
+  rating: number;
+  comment: string | null;
+  status: CourseReviewStatus;
+  createdAt: string;
+}
+
 export interface Settings {
   whatsapp: string | null;
   email: string | null;
@@ -301,6 +372,7 @@ export interface Settings {
   website: string | null;
   brandName: string | null;
   advisoryEnabled: boolean | null;
+  advisoryPrice: number | null;
   advisorySlotMinutes: number | null;
   advisoryDays: string | null;
   advisoryStartTime: string | null;
