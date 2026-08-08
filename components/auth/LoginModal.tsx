@@ -1,12 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { ApiError } from "@/lib/api/client";
+import { getSettings } from "@/lib/api/settings";
 import Modal from "@/components/ui/Modal";
 
 interface LoginModalProps {
   onClose: () => void;
+}
+
+function isDirectVideoUrl(url: string) {
+  return /\.(mp4|webm|ogg)(\?|$)/i.test(url) || url.includes("/video/upload/");
 }
 
 export default function LoginModal({ onClose }: LoginModalProps) {
@@ -17,6 +22,19 @@ export default function LoginModal({ onClose }: LoginModalProps) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [presentationVideoUrl, setPresentationVideoUrl] = useState<string | null>(null);
+  const [showVideo, setShowVideo] = useState(false);
+
+  useEffect(() => {
+    getSettings()
+      .then(({ settings }) => {
+        if (settings.presentationVideoEnabled && settings.presentationVideoUrl) {
+          setPresentationVideoUrl(settings.presentationVideoUrl);
+          setShowVideo(true);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const switchMode = (next: "login" | "register") => {
     setMode(next);
@@ -46,6 +64,32 @@ export default function LoginModal({ onClose }: LoginModalProps) {
       setLoading(false);
     }
   };
+
+  if (showVideo && presentationVideoUrl) {
+    return (
+      <Modal title="Bienvenido a ALIVOS" onClose={onClose} maxWidth="max-w-lg">
+        <div className="aspect-video bg-slate-900 rounded-2xl overflow-hidden shadow-md">
+          {isDirectVideoUrl(presentationVideoUrl) ? (
+            <video src={presentationVideoUrl} controls autoPlay className="w-full h-full" />
+          ) : (
+            <iframe
+              src={presentationVideoUrl}
+              className="w-full h-full"
+              allow="autoplay; fullscreen; picture-in-picture"
+              allowFullScreen
+              title="Video de presentación"
+            />
+          )}
+        </div>
+        <button
+          onClick={() => setShowVideo(false)}
+          className="w-full mt-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl transition-colors"
+        >
+          Continuar a iniciar sesión
+        </button>
+      </Modal>
+    );
+  }
 
   return (
     <Modal title={mode === "login" ? "Iniciar sesión" : "Crear cuenta"} onClose={onClose} maxWidth="max-w-sm">

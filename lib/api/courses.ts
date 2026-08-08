@@ -5,6 +5,7 @@ import {
   Course,
   CourseReview,
   FormResponse,
+  LessonSurveyResponse,
   MyTask,
   Professional,
   Purchase,
@@ -41,7 +42,10 @@ export async function addTaskComment(lessonId: string, input: { text?: string; f
   return apiFetch<MyTask>(`/tasks/${lessonId}/comments`, { method: "POST", body: input });
 }
 
-export async function submitCourseReview(slug: string, input: { rating: number; comment?: string }) {
+export async function submitCourseReview(
+  slug: string,
+  input: { rating: number; comment?: string; mediaUrl?: string; mediaType?: "IMAGE" | "VIDEO" }
+) {
   return apiFetch<CourseReview>(`/courses/${slug}/reviews`, { method: "POST", body: input });
 }
 
@@ -55,6 +59,17 @@ export async function getFormResponse(lessonId: string) {
 
 export async function submitFormResponse(lessonId: string, answers: string) {
   return apiFetch<FormResponse>(`/lessons/${lessonId}/form-response`, { method: "POST", body: { answers } });
+}
+
+export async function getLessonSurveyResponse(attachmentId: string) {
+  return apiFetch<LessonSurveyResponse | null>(`/lesson-attachments/${attachmentId}/survey-response`);
+}
+
+export async function submitLessonSurveyResponse(attachmentId: string, answers: string) {
+  return apiFetch<LessonSurveyResponse>(`/lesson-attachments/${attachmentId}/survey-response`, {
+    method: "POST",
+    body: { answers },
+  });
 }
 
 export async function listProfessionals() {

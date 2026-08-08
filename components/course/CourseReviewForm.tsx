@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { submitCourseReview } from "@/lib/api/courses";
-import { CourseReview } from "@/lib/api/types";
+import { uploadFile } from "@/lib/api/uploads";
+import { CourseReview, ReviewMediaType } from "@/lib/api/types";
 import { ApiError } from "@/lib/api/client";
 
 interface CourseReviewFormProps {
@@ -15,9 +16,26 @@ export default function CourseReviewForm({ slug, existingReview, onSubmitted }: 
   const [rating, setRating] = useState(existingReview?.rating ?? 0);
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState(existingReview?.comment ?? "");
+  const [mediaUrl, setMediaUrl] = useState(existingReview?.mediaUrl ?? "");
+  const [mediaType, setMediaType] = useState<ReviewMediaType | null>(existingReview?.mediaType ?? null);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+
+  const handleMediaChange = async (file: File) => {
+    setUploadingMedia(true);
+    setError(null);
+    try {
+      const { url } = await uploadFile(file);
+      setMediaUrl(url);
+      setMediaType(file.type.startsWith("video/") ? "VIDEO" : "IMAGE");
+    } catch {
+      setError("No se pudo subir el archivo. Intenta de nuevo.");
+    } finally {
+      setUploadingMedia(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,7 +46,12 @@ export default function CourseReviewForm({ slug, existingReview, onSubmitted }: 
     setSaving(true);
     setError(null);
     try {
-      const review = await submitCourseReview(slug, { rating, comment: comment.trim() || undefined });
+      const review = await submitCourseReview(slug, {
+        rating,
+        comment: comment.trim() || undefined,
+        mediaUrl: mediaUrl || undefined,
+        mediaType: mediaUrl ? mediaType ?? undefined : undefined,
+      });
       onSubmitted(review);
       setSent(true);
       setTimeout(() => setSent(false), 4000);
@@ -82,6 +105,27 @@ export default function CourseReviewForm({ slug, existingReview, onSubmitted }: 
           value={comment}
           onChange={(e) => setComment(e.target.value)}
         />
+        <div className="mt-3">
+          <label className="block text-xs font-medium text-slate-500 mb-1.5">Agregar foto o video (opcional)</label>
+          <input
+            type="file"
+            accept="image/*,video/*"
+            disabled={uploadingMedia}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleMediaChange(file);
+            }}
+            className="w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-brand-50 file:text-brand-700 file:text-xs file:font-semibold hover:file:bg-brand-100 disabled:opacity-50"
+          />
+          {uploadingMedia && <p className="text-xs text-slate-400 mt-1">Subiendo...</p>}
+          {mediaUrl && mediaType === "IMAGE" && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={mediaUrl} alt="" className="mt-2 h-24 rounded-xl object-cover border border-slate-100" />
+          )}
+          {mediaUrl && mediaType === "VIDEO" && (
+            <video src={mediaUrl} controls className="mt-2 h-32 rounded-xl border border-slate-100" />
+          )}
+        </div>
         <button
           type="submit"
           disabled={saving}

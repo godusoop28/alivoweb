@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { completeLesson, getCourse } from "@/lib/api/courses";
 import { getFallbackCourses } from "@/lib/api/mockFallback";
-import { Course, FormField, Lesson, Module } from "@/lib/api/types";
+import { ChecklistItem, Course, FormField, Lesson, Module } from "@/lib/api/types";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { ApiError } from "@/lib/api/client";
 import TaskThread from "@/components/course/TaskThread";
@@ -11,6 +11,9 @@ import PurchaseGate from "@/components/course/PurchaseGate";
 import CourseReviewForm from "@/components/course/CourseReviewForm";
 import FormRenderer from "@/components/course/FormRenderer";
 import AdvisoryModal from "@/components/advisory/AdvisoryModal";
+import ChecklistView from "@/components/course/ChecklistView";
+import LessonAttachmentsView from "@/components/course/LessonAttachmentsView";
+import RichTextView from "@/components/ui/RichTextView";
 
 interface CourseViewerProps {
   courseId: string;
@@ -69,6 +72,16 @@ const typeIcon = (type: Lesson["type"]) => {
 };
 
 function parseFormSchema(raw: string | null): FormField[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function parseChecklist(raw: string | null): ChecklistItem[] {
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
@@ -336,22 +349,24 @@ export default function CourseViewer({ courseId, onBack }: CourseViewerProps) {
               </div>
             ))}
           </div>
-          <div className="px-4 py-3 border-t border-slate-100 shrink-0">
-            <button
-              onClick={() => setShowAdvisory(true)}
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-alivos-dark hover:bg-brand-900 text-white text-xs font-semibold rounded-xl transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-              </svg>
-              Solicitar asesoramiento en línea
-            </button>
-          </div>
+          {currentLesson?.advisoryEnabled !== false && (
+            <div className="px-4 py-3 border-t border-slate-100 shrink-0">
+              <button
+                onClick={() => setShowAdvisory(true)}
+                className="w-full flex items-center justify-center gap-2 py-2.5 bg-alivos-dark hover:bg-brand-900 text-white text-xs font-semibold rounded-xl transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+                Solicitar asesoramiento en línea
+              </button>
+            </div>
+          )}
         </aside>
 
         {/* Main content */}
@@ -535,9 +550,23 @@ export default function CourseViewer({ courseId, onBack }: CourseViewerProps) {
                 </div>
 
                 {currentLesson.description && (
-                  <p className="text-slate-600 leading-relaxed whitespace-pre-line">{currentLesson.description}</p>
+                  /<[a-z][\s\S]*>/i.test(currentLesson.description) ? (
+                    <RichTextView html={currentLesson.description} />
+                  ) : (
+                    <p className="text-slate-600 leading-relaxed whitespace-pre-line">{currentLesson.description}</p>
+                  )
                 )}
               </div>
+
+              {/* Materials checklist */}
+              {!currentLesson.locked && (
+                <ChecklistView lessonId={currentLesson.id} items={parseChecklist(currentLesson.checklistItems)} />
+              )}
+
+              {/* Lesson attachments (PDFs, links, surveys) */}
+              {!currentLesson.locked && (
+                <LessonAttachmentsView attachments={currentLesson.attachments ?? []} />
+              )}
 
               {/* Materials */}
               {!currentLesson.locked && currentLesson.hasMaterial && (
@@ -574,7 +603,7 @@ export default function CourseViewer({ courseId, onBack }: CourseViewerProps) {
               )}
 
               {/* Task / lesson comments */}
-              {!currentLesson.locked && (
+              {!currentLesson.locked && currentLesson.commentsEnabled !== false && (
                 user ? (
                   <TaskThread lessonId={currentLesson.id} />
                 ) : (
@@ -597,6 +626,42 @@ export default function CourseViewer({ courseId, onBack }: CourseViewerProps) {
                     setCourse((prev) => (prev ? { ...prev, myReview: review } : prev))
                   }
                 />
+              )}
+
+              {/* Reviews list */}
+              {course.reviews.length > 0 && (
+                <div className="bg-white rounded-2xl p-5 mb-4 shadow-sm">
+                  <h3 className="font-semibold text-alivos-dark mb-3">Reseñas de familias</h3>
+                  <div className="space-y-4">
+                    {course.reviews.map((review) => (
+                      <div key={review.id} className="border-b border-slate-100 last:border-0 pb-4 last:pb-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm font-medium text-alivos-dark">{review.studentName}</span>
+                          <div className="flex items-center gap-0.5">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <svg
+                                key={star}
+                                className={`w-3.5 h-3.5 ${review.rating >= star ? "text-amber-400" : "text-slate-200"}`}
+                                fill="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.562.562 0 00-.586 0L6.982 21.04a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+                              </svg>
+                            ))}
+                          </div>
+                        </div>
+                        {review.comment && <p className="text-sm text-slate-600">{review.comment}</p>}
+                        {review.mediaUrl && review.mediaType === "IMAGE" && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={review.mediaUrl} alt="" className="mt-2 h-28 rounded-xl object-cover border border-slate-100" />
+                        )}
+                        {review.mediaUrl && review.mediaType === "VIDEO" && (
+                          <video src={review.mediaUrl} controls className="mt-2 h-36 rounded-xl border border-slate-100" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
 
               {/* Navigation */}

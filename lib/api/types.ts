@@ -14,6 +14,8 @@ export type CourseReviewStatus = "APPROVED" | "HIDDEN";
 export type TestimonialStatus = "PUBLISHED" | "HIDDEN";
 export type FormFieldType = "TEXT" | "TEXTAREA" | "CHOICE" | "CHECKBOX";
 export type ResourceType = "PDF" | "VIDEO" | "ARTICLE" | "LINK";
+export type LessonAttachmentType = "PDF" | "LINK" | "SURVEY";
+export type ReviewMediaType = "IMAGE" | "VIDEO";
 
 export interface AuthUser {
   id: string;
@@ -47,6 +49,34 @@ export interface Lesson {
   formSchema: string | null;
   completed: boolean;
   locked: boolean;
+  checklistItems: string | null;
+  commentsEnabled: boolean;
+  advisoryEnabled: boolean;
+  attachments: LessonAttachment[] | null;
+}
+
+export interface LessonAttachment {
+  id: string;
+  type: LessonAttachmentType;
+  title: string;
+  description: string | null;
+  fileUrl: string | null;
+  externalUrl: string | null;
+  formSchema: string | null;
+  order: number;
+}
+
+export interface ChecklistItem {
+  id: string;
+  text: string;
+}
+
+export interface LessonSurveyResponse {
+  id: string;
+  studentName: string;
+  studentEmail: string;
+  answers: string;
+  submittedAt: string;
 }
 
 export interface FormField {
@@ -72,6 +102,8 @@ export interface CourseReview {
   studentName: string;
   rating: number;
   comment: string | null;
+  mediaUrl: string | null;
+  mediaType: ReviewMediaType | null;
   createdAt: string;
 }
 
@@ -359,6 +391,8 @@ export interface AdminCourseReview {
   studentName: string;
   rating: number;
   comment: string | null;
+  mediaUrl: string | null;
+  mediaType: ReviewMediaType | null;
   status: CourseReviewStatus;
   createdAt: string;
 }
@@ -377,6 +411,17 @@ export interface Settings {
   advisoryDays: string | null;
   advisoryStartTime: string | null;
   advisoryEndTime: string | null;
+  presentationVideoUrl: string | null;
+  presentationVideoEnabled: boolean | null;
+}
+
+export interface ResourceAttachment {
+  id: string;
+  title: string;
+  description: string | null;
+  fileUrl: string | null;
+  externalUrl: string | null;
+  order: number;
 }
 
 export interface LearningResource {
@@ -392,6 +437,17 @@ export interface LearningResource {
   content: string | null;
   externalUrl: string | null;
   visible: boolean;
+  createdAt: string;
+  attachments: ResourceAttachment[] | null;
+}
+
+export interface ContactMessage {
+  id: string;
+  name: string;
+  lastName: string | null;
+  email: string;
+  message: string;
+  read: boolean;
   createdAt: string;
 }
 

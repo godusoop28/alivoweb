@@ -60,6 +60,7 @@ export default function AdminReviews() {
                   <th className="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Alumno</th>
                   <th className="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Rating</th>
                   <th className="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider hidden md:table-cell">Comentario</th>
+                  <th className="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Media</th>
                   <th className="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Estado</th>
                   <th className="text-right px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Acción</th>
                 </tr>
@@ -72,6 +73,16 @@ export default function AdminReviews() {
                     <td className="px-5 py-4 text-amber-500 font-semibold">{"★".repeat(review.rating)}</td>
                     <td className="px-5 py-4 text-slate-500 text-xs hidden md:table-cell max-w-sm">
                       <p className="line-clamp-3">{review.comment || "—"}</p>
+                    </td>
+                    <td className="px-5 py-4">
+                      {review.mediaUrl && review.mediaType === "IMAGE" && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={review.mediaUrl} alt="" className="w-16 h-12 object-cover rounded-lg border border-slate-100" />
+                      )}
+                      {review.mediaUrl && review.mediaType === "VIDEO" && (
+                        <video src={review.mediaUrl} className="w-16 h-12 object-cover rounded-lg border border-slate-100" />
+                      )}
+                      {!review.mediaUrl && <span className="text-xs text-slate-300">—</span>}
                     </td>
                     <td className="px-5 py-4">
                       <span
@@ -99,7 +110,7 @@ export default function AdminReviews() {
                 ))}
                 {reviews.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-5 py-10 text-center text-slate-400 text-sm">
+                    <td colSpan={7} className="px-5 py-10 text-center text-slate-400 text-sm">
                       Todavía no hay reseñas de cursos.
                     </td>
                   </tr>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { getSettings, updateSettings } from "@/lib/api/settings";
 import { Settings } from "@/lib/api/types";
+import FileOrLinkField from "@/components/ui/FileOrLinkField";
 
 const emptySettings: Settings = {
   whatsapp: "",
@@ -18,6 +19,8 @@ const emptySettings: Settings = {
   advisoryDays: "1,2,3,4,5",
   advisoryStartTime: "09:00",
   advisoryEndTime: "18:00",
+  presentationVideoUrl: "",
+  presentationVideoEnabled: false,
 };
 
 export default function AdminSettings() {
@@ -215,6 +218,37 @@ export default function AdminSettings() {
             Ponlo en 0 para que agendar una cita sea gratis para todos.
           </p>
         </div>
+      </div>
+
+      {/* Presentation video */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="font-bold text-alivos-dark flex items-center gap-2">
+            <svg className="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.75 10.5l4.72-2.36a.75.75 0 011.03.67v6.38a.75.75 0 01-1.03.67l-4.72-2.36M4.5 6.75h9a1.5 1.5 0 011.5 1.5v6a1.5 1.5 0 01-1.5 1.5h-9a1.5 1.5 0 01-1.5-1.5v-6a1.5 1.5 0 011.5-1.5z" />
+            </svg>
+            Video de presentación
+          </h2>
+          <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={settings.presentationVideoEnabled ?? false}
+              onChange={(e) => setSettings({ ...settings, presentationVideoEnabled: e.target.checked })}
+              className="w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-300"
+            />
+            Mostrar antes de iniciar sesión
+          </label>
+        </div>
+        <p className="text-xs text-slate-500 -mt-2">
+          Este video se muestra a los visitantes antes de que puedan iniciar sesión o registrarse.
+        </p>
+        <FileOrLinkField
+          fileUrl={settings.presentationVideoUrl ?? ""}
+          externalUrl={settings.presentationVideoUrl ?? ""}
+          onChangeFileUrl={(url) => setSettings({ ...settings, presentationVideoUrl: url })}
+          onChangeExternalUrl={(url) => setSettings({ ...settings, presentationVideoUrl: url })}
+          accept="video/*"
+        />
       </div>
 
       <button

@@ -71,6 +71,10 @@ export function getFallbackCourses(): Course[] {
         formSchema: null,
         completed: l.completed,
         locked: !c.enrolled,
+        checklistItems: null,
+        commentsEnabled: true,
+        advisoryEnabled: true,
+        attachments: [],
       })),
     })),
   }));

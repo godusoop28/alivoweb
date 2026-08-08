@@ -4,12 +4,27 @@ import { useEffect, useState } from "react";
 import { listCourses } from "@/lib/api/courses";
 import { getFallbackCourses } from "@/lib/api/mockFallback";
 import { getHomeTestimonials } from "@/lib/api/testimonials";
-import { Course, HomeTestimonial, Lesson } from "@/lib/api/types";
+import { listResources } from "@/lib/api/resources";
+import { Course, HomeTestimonial, Lesson, LearningResource, ResourceType } from "@/lib/api/types";
 import { alivosAssets } from "@/lib/assets/alivosAssets";
 
 interface HomePageProps {
-  onNavigate: (view: "courses" | "contact" | "course" | "dashboard", courseId?: string) => void;
+  onNavigate: (view: "courses" | "contact" | "course" | "dashboard" | "resources", courseId?: string) => void;
 }
+
+const resourceTypeLabel: Record<ResourceType, string> = {
+  PDF: "PDF",
+  VIDEO: "Video",
+  ARTICLE: "Lectura",
+  LINK: "Enlace",
+};
+
+const resourceTypeColor: Record<ResourceType, string> = {
+  PDF: "bg-red-100 text-red-700",
+  VIDEO: "bg-blue-100 text-blue-700",
+  ARTICLE: "bg-purple-100 text-purple-700",
+  LINK: "bg-slate-100 text-slate-600",
+};
 
 function findFirstVideo(courses: Course[]): Lesson | null {
   for (const course of courses) {
@@ -114,6 +129,7 @@ function VideoOrImage({
 export default function HomePage({ onNavigate }: HomePageProps) {
   const [courses, setCourses] = useState<Course[]>([]);
   const [testimonials, setTestimonials] = useState<HomeTestimonial[]>([]);
+  const [resources, setResources] = useState<LearningResource[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -143,7 +159,22 @@ export default function HomePage({ onNavigate }: HomePageProps) {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    listResources()
+      .then(({ resources }) => {
+        if (!cancelled) setResources(resources);
+      })
+      .catch(() => {
+        if (!cancelled) setResources([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const modules = courses.slice(0, 4);
+  const homeResources = resources.slice(0, 4);
   const welcomeVideo = findFirstVideo(courses);
 
   return (
@@ -315,6 +346,68 @@ export default function HomePage({ onNavigate }: HomePageProps) {
           </div>
         </div>
       </section>
+
+      {/* Aprende Más */}
+      {homeResources.length > 0 && (
+        <section className="bg-white py-14 sm:py-20">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12 sm:mb-16">
+              <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-4">Aprende Más</h2>
+              <div className="w-10 h-0.5 bg-black mx-auto mb-4" />
+              <p className="text-slate-500 max-w-xl mx-auto">
+                Recursos gratuitos del equipo de ALIVOS: PDFs, lecturas, videos y enlaces útiles.
+              </p>
+            </div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {homeResources.map((resource) => (
+                <button
+                  key={resource.id}
+                  onClick={() => onNavigate("resources")}
+                  className="text-left bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-brand-200 hover:-translate-y-0.5 transition-all flex flex-col group"
+                >
+                  <div className="aspect-[4/3] bg-alivos-light relative overflow-hidden">
+                    {resource.coverImage || resource.vimeoThumbnail ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={resource.coverImage ?? resource.vimeoThumbnail ?? undefined}
+                        alt={resource.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-brand-200 text-3xl font-bold">
+                        {resourceTypeLabel[resource.type]}
+                      </div>
+                    )}
+                    <span
+                      className={`absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full text-xs font-semibold shadow-sm ${resourceTypeColor[resource.type]}`}
+                    >
+                      {resourceTypeLabel[resource.type]}
+                    </span>
+                  </div>
+                  <div className="p-4 flex-1">
+                    <h3 className="font-semibold text-sm text-slate-900 group-hover:text-brand-700 transition-colors leading-snug">
+                      {resource.title}
+                    </h3>
+                  </div>
+                </button>
+              ))}
+            </div>
+            <div className="text-center mt-12">
+              <button
+                onClick={() => onNavigate("resources")}
+                className="inline-flex items-center gap-2 px-7 py-3 bg-success-600 hover:bg-success-700 text-white font-semibold rounded-full transition-colors"
+              >
+                Ver todos los recursos
+                <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" />
+                  </svg>
+                </span>
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Lo que dicen las familias */}
       {testimonials.length > 0 && (

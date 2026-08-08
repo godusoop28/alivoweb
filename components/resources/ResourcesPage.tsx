@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { listResources } from "@/lib/api/resources";
 import { LearningResource, ResourceType } from "@/lib/api/types";
 import Modal from "@/components/ui/Modal";
+import RichTextView from "@/components/ui/RichTextView";
 
 const typeLabel: Record<ResourceType, string> = {
   PDF: "PDF",
@@ -110,7 +111,7 @@ export default function ResourcesPage() {
               <button
                 key={resource.id}
                 onClick={() => setSelected(resource)}
-                className="text-left border border-slate-200 rounded-lg overflow-hidden hover:shadow-md hover:border-brand-200 transition-all flex flex-col"
+                className="text-left bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-brand-200 hover:-translate-y-0.5 transition-all flex flex-col group"
               >
                 <div className="aspect-[4/3] bg-alivos-light relative overflow-hidden">
                   {resource.coverImage || resource.vimeoThumbnail ? (
@@ -118,21 +119,29 @@ export default function ResourcesPage() {
                     <img
                       src={resource.coverImage ?? resource.vimeoThumbnail ?? undefined}
                       alt={resource.title}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-brand-300">
                       <TypeIcon type={resource.type} className="w-12 h-12" />
                     </div>
                   )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                   <span
-                    className={`absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full text-xs font-semibold ${typeColor[resource.type]}`}
+                    className={`absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full text-xs font-semibold shadow-sm ${typeColor[resource.type]}`}
                   >
                     {typeLabel[resource.type]}
                   </span>
+                  {resource.attachments && resource.attachments.length > 0 && (
+                    <span className="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-white/90 text-slate-600 shadow-sm">
+                      +{resource.attachments.length} archivo{resource.attachments.length > 1 ? "s" : ""}
+                    </span>
+                  )}
                 </div>
                 <div className="p-5 flex-1 flex flex-col">
-                  <h3 className="font-semibold text-slate-900 mb-1.5 leading-snug">{resource.title}</h3>
+                  <h3 className="font-semibold text-slate-900 mb-1.5 leading-snug group-hover:text-brand-700 transition-colors">
+                    {resource.title}
+                  </h3>
                   {resource.description && (
                     <p className="text-sm text-slate-500 line-clamp-3">{resource.description}</p>
                   )}
@@ -166,9 +175,15 @@ export default function ResourcesPage() {
           )}
 
           {selected.type === "ARTICLE" && (
-            <p className="text-slate-700 leading-relaxed whitespace-pre-line">
-              {selected.content || "Este contenido todavía no está disponible."}
-            </p>
+            selected.content ? (
+              /<[a-z][\s\S]*>/i.test(selected.content) ? (
+                <RichTextView html={selected.content} />
+              ) : (
+                <p className="text-slate-700 leading-relaxed whitespace-pre-line">{selected.content}</p>
+              )
+            ) : (
+              <p className="text-slate-400 text-sm">Este contenido todavía no está disponible.</p>
+            )
           )}
 
           {selected.type === "PDF" && (
@@ -200,6 +215,35 @@ export default function ResourcesPage() {
             ) : (
               <p className="text-sm text-slate-400">Este enlace todavía no está disponible.</p>
             )
+          )}
+
+          {selected.attachments && selected.attachments.length > 0 && (
+            <div>
+              <h4 className="text-sm font-semibold text-slate-700 mb-2">Archivos adicionales</h4>
+              <div className="space-y-2">
+                {selected.attachments.map((attachment) => (
+                  <a
+                    key={attachment.id}
+                    href={attachment.fileUrl || attachment.externalUrl || "#"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl hover:bg-brand-50 transition-colors group"
+                  >
+                    <div className="w-9 h-9 bg-red-100 rounded-lg flex items-center justify-center shrink-0">
+                      <TypeIcon type="PDF" className="w-4 h-4 text-red-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-slate-800 group-hover:text-brand-700 truncate">
+                        {attachment.title}
+                      </p>
+                      {attachment.description && (
+                        <p className="text-xs text-slate-400 truncate">{attachment.description}</p>
+                      )}
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
           )}
         </Modal>
       )}

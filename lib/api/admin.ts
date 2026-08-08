@@ -5,10 +5,13 @@ import {
   Appointment,
   AppointmentAccess,
   AppointmentStatus,
+  ContactMessage,
   Course,
   CourseReviewStatus,
   FormResponse,
   LearningResource,
+  LessonAttachmentType,
+  LessonSurveyResponse,
   ManualAccess,
   Professional,
   Purchase,
@@ -80,6 +83,17 @@ export async function deleteModule(id: string) {
 
 // ----- Lessons -----
 
+export interface LessonAttachmentInput {
+  id?: string;
+  type: LessonAttachmentType;
+  title: string;
+  description?: string;
+  fileUrl?: string;
+  externalUrl?: string;
+  formSchema?: string;
+  order?: number;
+}
+
 export interface LessonInput {
   title: string;
   type?: "VIDEO" | "TEXT" | "PDF" | "TASK" | "EVALUATION" | "FORM";
@@ -96,6 +110,10 @@ export interface LessonInput {
   pdfUrl?: string;
   assetType?: string;
   formSchema?: string;
+  checklistItems?: string;
+  commentsEnabled?: boolean;
+  advisoryEnabled?: boolean;
+  attachments?: LessonAttachmentInput[];
 }
 
 export async function createLesson(moduleId: string, input: LessonInput) {
@@ -112,6 +130,10 @@ export async function deleteLesson(id: string) {
 
 export async function listFormResponses(lessonId: string) {
   return apiFetch<{ responses: FormResponse[] }>(`/admin/lessons/${lessonId}/form-responses`);
+}
+
+export async function listLessonSurveyResponses(attachmentId: string) {
+  return apiFetch<{ responses: LessonSurveyResponse[] }>(`/admin/lesson-attachments/${attachmentId}/survey-responses`);
 }
 
 // ----- Students -----
@@ -283,6 +305,15 @@ export async function deleteTestimonial(id: string) {
 
 // ----- Learning resources ("Aprende Más") -----
 
+export interface ResourceAttachmentInput {
+  id?: string;
+  title: string;
+  description?: string;
+  fileUrl?: string;
+  externalUrl?: string;
+  order?: number;
+}
+
 export interface LearningResourceInput {
   title: string;
   description?: string;
@@ -294,6 +325,7 @@ export interface LearningResourceInput {
   externalUrl?: string;
   visible?: boolean;
   order?: number;
+  attachments?: ResourceAttachmentInput[];
 }
 
 export async function listAdminResources() {
@@ -310,4 +342,10 @@ export async function updateResource(id: string, input: Partial<LearningResource
 
 export async function deleteResource(id: string) {
   return apiFetch<{ ok: true }>(`/admin/resources/${id}`, { method: "DELETE" });
+}
+
+// ----- Contact messages -----
+
+export async function listContactMessages() {
+  return apiFetch<{ messages: ContactMessage[] }>("/admin/contact");
 }

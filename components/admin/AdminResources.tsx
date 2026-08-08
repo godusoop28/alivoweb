@@ -2,11 +2,14 @@
 
 import { useEffect, useState } from "react";
 import * as adminApi from "@/lib/api/admin";
+import { ResourceAttachmentInput } from "@/lib/api/admin";
 import { LearningResource, ResourceType } from "@/lib/api/types";
 import { ApiError } from "@/lib/api/client";
 import Modal from "@/components/ui/Modal";
 import FileUploadField from "@/components/ui/FileUploadField";
+import RichTextEditor from "@/components/ui/RichTextEditor";
 import VimeoUploadField from "@/components/admin/VimeoUploadField";
+import ResourceAttachmentsEditor from "@/components/admin/ResourceAttachmentsEditor";
 
 interface ResourceFormData {
   title: string;
@@ -19,6 +22,7 @@ interface ResourceFormData {
   content: string;
   externalUrl: string;
   visible: boolean;
+  attachments: ResourceAttachmentInput[];
 }
 
 const defaultForm: ResourceFormData = {
@@ -32,6 +36,7 @@ const defaultForm: ResourceFormData = {
   content: "",
   externalUrl: "",
   visible: true,
+  attachments: [],
 };
 
 const typeOptions: { value: ResourceType; label: string }[] = [
@@ -87,6 +92,14 @@ export default function AdminResources() {
       content: resource.content ?? "",
       externalUrl: resource.externalUrl ?? "",
       visible: resource.visible,
+      attachments: (resource.attachments ?? []).map((a) => ({
+        id: a.id,
+        title: a.title,
+        description: a.description ?? "",
+        fileUrl: a.fileUrl ?? "",
+        externalUrl: a.externalUrl ?? "",
+        order: a.order,
+      })),
     });
     setShowForm(true);
   };
@@ -105,6 +118,7 @@ export default function AdminResources() {
         content: formData.type === "ARTICLE" ? formData.content || undefined : undefined,
         externalUrl: formData.type === "LINK" ? formData.externalUrl || undefined : undefined,
         visible: formData.visible,
+        attachments: formData.attachments.filter((a) => a.title.trim()),
       };
       if (editingId) {
         await adminApi.updateResource(editingId, input);
@@ -156,7 +170,7 @@ export default function AdminResources() {
         <Modal
           title={editingId ? "Editar recurso" : "Nuevo recurso"}
           onClose={() => setShowForm(false)}
-          maxWidth="max-w-lg"
+          maxWidth="max-w-2xl"
           footer={
             <>
               <button
@@ -231,16 +245,12 @@ export default function AdminResources() {
             />
           )}
           {formData.type === "ARTICLE" && (
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Contenido de la lectura</label>
-              <textarea
-                value={formData.content}
-                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                rows={8}
-                className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300"
-                placeholder="Escribe el texto completo de la lectura. Los saltos de línea se respetan al mostrarla."
-              />
-            </div>
+            <RichTextEditor
+              label="Contenido de la lectura"
+              value={formData.content}
+              onChange={(html) => setFormData({ ...formData, content: html })}
+              placeholder="Escribe el texto completo de la lectura..."
+            />
           )}
           {formData.type === "LINK" && (
             <div>
@@ -261,6 +271,11 @@ export default function AdminResources() {
             onChange={(url) => setFormData({ ...formData, coverImage: url })}
             accept="image/*"
             preview="image"
+          />
+
+          <ResourceAttachmentsEditor
+            attachments={formData.attachments}
+            onChange={(attachments) => setFormData({ ...formData, attachments })}
           />
 
           <label className="flex items-center gap-2.5 cursor-pointer">

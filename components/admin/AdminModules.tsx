@@ -3,14 +3,19 @@
 import { useEffect, useRef, useState } from "react";
 import { Upload as TusUpload } from "tus-js-client";
 import * as adminApi from "@/lib/api/admin";
+import { LessonAttachmentInput } from "@/lib/api/admin";
 import { createVimeoUploadTicket, resolveVimeoUrl } from "@/lib/api/courses";
-import { Course, FormField, Lesson, LessonType } from "@/lib/api/types";
+import { ChecklistItem, Course, FormField, Lesson, LessonType } from "@/lib/api/types";
 import { ApiError } from "@/lib/api/client";
 import { alivosAssets, getModuleAssetsByOrder } from "@/lib/assets/alivosAssets";
 import Modal from "@/components/ui/Modal";
 import FileUploadField from "@/components/ui/FileUploadField";
+import RichTextEditor from "@/components/ui/RichTextEditor";
 import FormBuilder from "@/components/admin/FormBuilder";
 import FormResponsesModal from "@/components/admin/FormResponsesModal";
+import ChecklistEditor from "@/components/admin/ChecklistEditor";
+import LessonAttachmentsEditor from "@/components/admin/LessonAttachmentsEditor";
+import LessonPreviewModal from "@/components/admin/LessonPreviewModal";
 
 interface LessonForm {
   title: string;
@@ -27,6 +32,10 @@ interface LessonForm {
   assetType: string;
   formFields: FormField[];
   visible: boolean;
+  checklistItems: ChecklistItem[];
+  commentsEnabled: boolean;
+  advisoryEnabled: boolean;
+  attachments: LessonAttachmentInput[];
 }
 
 const defaultLessonForm: LessonForm = {
@@ -44,6 +53,10 @@ const defaultLessonForm: LessonForm = {
   assetType: "",
   formFields: [],
   visible: true,
+  checklistItems: [],
+  commentsEnabled: true,
+  advisoryEnabled: true,
+  attachments: [],
 };
 
 const typeOptions: { value: LessonType; label: string }[] = [
@@ -56,6 +69,16 @@ const typeOptions: { value: LessonType; label: string }[] = [
 ];
 
 function parseFormSchema(raw: string | null): FormField[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function parseChecklist(raw: string | null): ChecklistItem[] {
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
@@ -84,6 +107,7 @@ export default function AdminModules() {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [viewingResponsesLesson, setViewingResponsesLesson] = useState<Lesson | null>(null);
+  const [previewingLesson, setPreviewingLesson] = useState<Lesson | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const load = () => {
@@ -141,6 +165,19 @@ export default function AdminModules() {
       assetType: lesson.assetType ?? "",
       formFields: parseFormSchema(lesson.formSchema),
       visible: lesson.visible,
+      checklistItems: parseChecklist(lesson.checklistItems),
+      commentsEnabled: lesson.commentsEnabled,
+      advisoryEnabled: lesson.advisoryEnabled,
+      attachments: (lesson.attachments ?? []).map((a) => ({
+        id: a.id,
+        type: a.type,
+        title: a.title,
+        description: a.description ?? "",
+        fileUrl: a.fileUrl ?? "",
+        externalUrl: a.externalUrl ?? "",
+        formSchema: a.formSchema ?? "[]",
+        order: a.order,
+      })),
     });
     setVimeoPreview(
       lesson.vimeoThumbnail ? { thumbnailUrl: lesson.vimeoThumbnail, title: lesson.title } : null
@@ -231,6 +268,23 @@ export default function AdminModules() {
               )
             : undefined,
         visible: lessonForm.visible,
+        checklistItems: JSON.stringify(lessonForm.checklistItems.filter((i) => i.text.trim())),
+        commentsEnabled: lessonForm.commentsEnabled,
+        advisoryEnabled: lessonForm.advisoryEnabled,
+        attachments: lessonForm.attachments
+          .filter((a) => a.title.trim())
+          .map((a) => ({
+            ...a,
+            formSchema:
+              a.type === "SURVEY"
+                ? JSON.stringify(
+                    (a.formSchema ? JSON.parse(a.formSchema) : []).map((field: FormField) => ({
+                      ...field,
+                      options: field.options.map((o) => o.trim()).filter(Boolean),
+                    }))
+                  )
+                : undefined,
+          })),
       };
       if (editingLessonId) {
         await adminApi.updateLesson(editingLessonId, input);
@@ -334,7 +388,7 @@ export default function AdminModules() {
         <Modal
           title={editingLessonId ? "Editar lección" : "Agregar lección"}
           onClose={() => setShowLessonForm(false)}
-          maxWidth={lessonForm.type === "FORM" ? "max-w-3xl" : "max-w-lg"}
+          maxWidth="max-w-3xl"
           footer={
             <>
               <button onClick={() => setShowLessonForm(false)} className="flex-1 py-2.5 border border-slate-200 text-slate-600 rounded-xl text-sm font-semibold hover:bg-slate-50 transition-colors">
@@ -505,15 +559,42 @@ export default function AdminModules() {
                   preview="pdf"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Descripción</label>
-                <textarea
-                  value={lessonForm.description}
-                  onChange={(e) => setLessonForm({ ...lessonForm, description: e.target.value })}
-                  rows={3}
-                  className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300 resize-none"
-                  placeholder="Descripción de la lección..."
-                />
+              <RichTextEditor
+                label="Descripción"
+                value={lessonForm.description}
+                onChange={(html) => setLessonForm({ ...lessonForm, description: html })}
+                placeholder="Descripción de la lección..."
+              />
+
+              <ChecklistEditor
+                items={lessonForm.checklistItems}
+                onChange={(items) => setLessonForm({ ...lessonForm, checklistItems: items })}
+              />
+
+              <LessonAttachmentsEditor
+                attachments={lessonForm.attachments}
+                onChange={(attachments) => setLessonForm({ ...lessonForm, attachments })}
+              />
+
+              <div className="space-y-3">
+                <label className="flex items-center gap-2.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={lessonForm.commentsEnabled}
+                    onChange={(e) => setLessonForm({ ...lessonForm, commentsEnabled: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-300"
+                  />
+                  <span className="text-sm text-slate-700">Permitir comentarios en esta lección</span>
+                </label>
+                <label className="flex items-center gap-2.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={lessonForm.advisoryEnabled}
+                    onChange={(e) => setLessonForm({ ...lessonForm, advisoryEnabled: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-300"
+                  />
+                  <span className="text-sm text-slate-700">Mostrar botón de &quot;Agendar cita&quot; en esta lección</span>
+                </label>
               </div>
               <div className="space-y-3">
                 <label className="flex items-center gap-2.5 cursor-pointer">
@@ -557,6 +638,10 @@ export default function AdminModules() {
                 </label>
               </div>
         </Modal>
+      )}
+
+      {previewingLesson && (
+        <LessonPreviewModal lesson={previewingLesson} onClose={() => setPreviewingLesson(null)} />
       )}
 
       {viewingResponsesLesson && (
@@ -744,6 +829,16 @@ export default function AdminModules() {
                             </svg>
                           </button>
                         )}
+                        <button
+                          onClick={() => setPreviewingLesson(lesson)}
+                          className="p-1 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded transition-colors"
+                          title="Vista previa"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                        </button>
                         <button
                           onClick={() => openEditLesson(module.id, lesson)}
                           className="p-1 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded transition-colors"

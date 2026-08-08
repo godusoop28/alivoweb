@@ -26,6 +26,7 @@ import AdminAppointmentAccess from "@/components/admin/AdminAppointmentAccess";
 import AdminReviews from "@/components/admin/AdminReviews";
 import AdminTestimonials from "@/components/admin/AdminTestimonials";
 import AdminResources from "@/components/admin/AdminResources";
+import AdminContactMessages from "@/components/admin/AdminContactMessages";
 import AdminSettings from "@/components/admin/AdminSettings";
 
 type StudentView = "home" | "courses" | "course" | "dashboard" | "contact" | "resources";
@@ -43,6 +44,7 @@ type AdminView =
   | "admin-reviews"
   | "admin-testimonials"
   | "admin-resources"
+  | "admin-contact"
   | "admin-settings";
 
 type CurrentView = StudentView | AdminView;
@@ -183,6 +185,7 @@ export default function App() {
       case "admin-reviews": return <AdminReviews />;
       case "admin-testimonials": return <AdminTestimonials />;
       case "admin-resources": return <AdminResources />;
+      case "admin-contact": return <AdminContactMessages />;
       case "admin-settings": return <AdminSettings />;
       default: return <AdminDashboard />;
     }
