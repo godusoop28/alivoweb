@@ -20,6 +20,7 @@ export const alivosAssets = {
     coverTwo: `${BASE}/home/portada-principal-juego-desarrollo-02.png`,
     babiesBanner: `${BASE}/home/banner-bebes-alivos.png`,
     babiesBannerHorizontal: `${BASE}/home/banner-bebes-alivos-horizontal.jpg`,
+    aboutTeam: `${BASE}/home/desarrollado-por-alivos-bebe-jugando.jpg`,
   },
   courseDescubriendoSuCuerpo: {
     slug: "descubriendo-su-cuerpo-0-3-meses",

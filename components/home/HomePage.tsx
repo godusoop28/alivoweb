@@ -5,7 +5,7 @@ import { listCourses } from "@/lib/api/courses";
 import { getFallbackCourses } from "@/lib/api/mockFallback";
 import { getHomeTestimonials } from "@/lib/api/testimonials";
 import { listResources } from "@/lib/api/resources";
-import { Course, HomeTestimonial, Lesson, LearningResource, ResourceType } from "@/lib/api/types";
+import { Course, HomeTestimonial, LearningResource, ResourceType } from "@/lib/api/types";
 import { alivosAssets } from "@/lib/assets/alivosAssets";
 
 interface HomePageProps {
@@ -26,16 +26,9 @@ const resourceTypeColor: Record<ResourceType, string> = {
   LINK: "bg-slate-100 text-slate-600",
 };
 
-function findFirstVideo(courses: Course[]): Lesson | null {
-  for (const course of courses) {
-    for (const courseModule of course.modules) {
-      for (const lesson of courseModule.lessons) {
-        if (lesson.vimeoEmbedUrl) return lesson;
-      }
-    }
-  }
-  return null;
-}
+// Videos fijos de la página de inicio (no dependen de ningún curso/lección).
+const WELCOME_VIDEO_EMBED = "https://player.vimeo.com/video/1183853512";
+const PLATFORM_GUIDE_VIDEO_EMBED = "https://player.vimeo.com/video/1192756417";
 
 function CourseRating({ rating, reviewsCount }: { rating: number | null; reviewsCount: number }) {
   const rounded = rating ? Math.round(rating) : 0;
@@ -175,7 +168,6 @@ export default function HomePage({ onNavigate }: HomePageProps) {
 
   const modules = courses.slice(0, 4);
   const homeResources = resources.slice(0, 4);
-  const welcomeVideo = findFirstVideo(courses);
 
   return (
     <div className="animate-fade-in">
@@ -188,7 +180,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
       >
         <div className="relative z-10 px-4">
           <h1 className="text-3xl sm:text-5xl font-bold text-white mb-6 sm:mb-8 max-w-3xl mx-auto leading-tight">
-            Cursos de Estimulación Temprana
+            Estimulación Temprana
           </h1>
           <button
             onClick={() => onNavigate("courses")}
@@ -216,8 +208,8 @@ export default function HomePage({ onNavigate }: HomePageProps) {
             <div className="rounded-xl overflow-hidden order-1">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={alivosAssets.home.babiesBanner}
-                alt="Equipo de ALIVOS acompañando a familias"
+                src={alivosAssets.home.aboutTeam}
+                alt="Bebé jugando y explorando con material de estimulación ALIVOS"
                 className="w-full h-auto object-cover"
               />
             </div>
@@ -255,7 +247,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
         {/* Bienvenida al curso */}
         <div className="max-w-4xl mx-auto px-0 sm:px-6 lg:px-8 pt-0 sm:pt-10">
           <VideoOrImage
-            embedUrl={welcomeVideo?.vimeoEmbedUrl}
+            embedUrl={WELCOME_VIDEO_EMBED}
             imageUrl={alivosAssets.home.welcome}
             alt="Bienvenida al curso ALIVOS"
             title="Bienvenida al curso"
@@ -273,7 +265,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
         <div className="max-w-5xl mx-auto px-0 sm:px-6 lg:px-8 pb-10 sm:pb-16">
           <div className="grid lg:grid-cols-2 gap-0 lg:gap-10 items-center">
             <VideoOrImage
-              embedUrl={null}
+              embedUrl={PLATFORM_GUIDE_VIDEO_EMBED}
               imageUrl={alivosAssets.home.platformGuide}
               alt="Cómo usar la plataforma ALIVOS"
               title="Cómo usar la plataforma"
@@ -313,11 +305,12 @@ export default function HomePage({ onNavigate }: HomePageProps) {
                       title={course.title}
                     />
                   </div>
-                  <h3 className="font-bold text-slate-900 mb-2 leading-snug">
-                    {course.title} ({course.ageRange})
+                  <h3 className="font-bold text-slate-900 leading-snug">
+                    {course.title}
                   </h3>
+                  <p className="text-sm text-slate-500 mb-2">({course.ageRange})</p>
                   <CourseRating rating={course.averageRating} reviewsCount={course.reviewsCount} />
-                  <p className="text-sm text-slate-500 leading-relaxed mb-5">
+                  <p className="text-sm text-slate-500 leading-relaxed mb-5 whitespace-pre-line">
                     {course.shortDescription}
                   </p>
                   <button
